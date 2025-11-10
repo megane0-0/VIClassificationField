@@ -331,12 +331,19 @@ class HumphreyFieldCalculator {
             // Step 1: Create squares from visible points
             const halfSize = config.gridSize / 2;
             const squares = visiblePoints.map(p => {
-                return turf.bboxPolygon([
-                    p.x - halfSize,
-                    p.y - halfSize,
-                    p.x + halfSize,
-                    p.y + halfSize
-                ]);
+                // Create a square polygon around each point
+                const minX = p.x - halfSize;
+                const minY = p.y - halfSize;
+                const maxX = p.x + halfSize;
+                const maxY = p.y + halfSize;
+
+                return turf.polygon([[
+                    [minX, minY],
+                    [maxX, minY],
+                    [maxX, maxY],
+                    [minX, maxY],
+                    [minX, minY]
+                ]]);
             });
 
             // Step 2: Merge all squares into visible region
@@ -389,53 +396,76 @@ class HumphreyFieldCalculator {
                 const line = turf.lineString([[x1, y1], [x2, y2]]);
 
                 try {
-                    // Find intersection points with visible region
+                    // Find intersection points with visible region boundary
                     const intersections = turf.lineIntersect(line, visibleRegion);
 
                     if (intersections.features.length >= 2) {
-                        // Find the two points furthest from each other
-                        let maxDist = 0;
-                        let point1 = null;
-                        let point2 = null;
+                        // Calculate diameter through fixation point
+                        // Find the furthest points on opposite sides of fixation
+                        let maxDistToFix1 = 0;
+                        let maxDistToFix2 = 0;
+                        let bestPoint1 = null;
+                        let bestPoint2 = null;
 
-                        for (let i = 0; i < intersections.features.length; i++) {
-                            for (let j = i + 1; j < intersections.features.length; j++) {
-                                const p1 = intersections.features[i];
-                                const p2 = intersections.features[j];
-                                const dist = turf.distance(p1, p2, { units: 'degrees' });
+                        // Separate points by which side of fixation they're on
+                        const side1Points = [];
+                        const side2Points = [];
 
-                                if (dist > maxDist) {
-                                    maxDist = dist;
-                                    point1 = p1;
-                                    point2 = p2;
-                                }
+                        for (const feature of intersections.features) {
+                            const coord = feature.geometry.coordinates;
+                            const vecX = coord[0] - fixationPoint[0];
+                            const vecY = coord[1] - fixationPoint[1];
+
+                            // Check which side of fixation this point is on
+                            const dotProduct = vecX * dx + vecY * dy;
+
+                            if (dotProduct > 0) {
+                                side1Points.push(feature);
+                            } else {
+                                side2Points.push(feature);
                             }
                         }
 
-                        // Check if fixation point is between these points
-                        if (point1 && point2) {
-                            const line12 = turf.lineString([
-                                point1.geometry.coordinates,
-                                point2.geometry.coordinates
-                            ]);
-                            const distToFix1 = turf.distance(point1, fixPoint, { units: 'degrees' });
-                            const distToFix2 = turf.distance(point2, fixPoint, { units: 'degrees' });
-                            const totalDist = turf.distance(point1, point2, { units: 'degrees' });
+                        // Find furthest point on each side (using Euclidean distance)
+                        for (const p of side1Points) {
+                            const coord = p.geometry.coordinates;
+                            const dist = Math.sqrt(
+                                Math.pow(coord[0] - fixationPoint[0], 2) +
+                                Math.pow(coord[1] - fixationPoint[1], 2)
+                            );
+                            if (dist > maxDistToFix1) {
+                                maxDistToFix1 = dist;
+                                bestPoint1 = p;
+                            }
+                        }
 
-                            // Check if fixation point is approximately on the line
-                            if (Math.abs(distToFix1 + distToFix2 - totalDist) < 0.1) {
-                                if (totalDist > maxDiameter) {
-                                    maxDiameter = totalDist;
-                                    maxAngle = angle;
-                                    maxEndpoint1 = {
-                                        x: point1.geometry.coordinates[0],
-                                        y: point1.geometry.coordinates[1]
-                                    };
-                                    maxEndpoint2 = {
-                                        x: point2.geometry.coordinates[0],
-                                        y: point2.geometry.coordinates[1]
-                                    };
-                                }
+                        for (const p of side2Points) {
+                            const coord = p.geometry.coordinates;
+                            const dist = Math.sqrt(
+                                Math.pow(coord[0] - fixationPoint[0], 2) +
+                                Math.pow(coord[1] - fixationPoint[1], 2)
+                            );
+                            if (dist > maxDistToFix2) {
+                                maxDistToFix2 = dist;
+                                bestPoint2 = p;
+                            }
+                        }
+
+                        // Calculate total diameter
+                        if (bestPoint1 && bestPoint2) {
+                            const totalDist = maxDistToFix1 + maxDistToFix2;
+
+                            if (totalDist > maxDiameter) {
+                                maxDiameter = totalDist;
+                                maxAngle = angle;
+                                maxEndpoint1 = {
+                                    x: bestPoint1.geometry.coordinates[0],
+                                    y: bestPoint1.geometry.coordinates[1]
+                                };
+                                maxEndpoint2 = {
+                                    x: bestPoint2.geometry.coordinates[0],
+                                    y: bestPoint2.geometry.coordinates[1]
+                                };
                             }
                         }
                     }
@@ -529,8 +559,55 @@ class HumphreyFieldCalculator {
 
     saveImage() {
         const svg = document.getElementById('visualField');
+        const svgClone = svg.cloneNode(true);
+
+        // Add inline styles to the cloned SVG
+        const style = document.createElementNS(this.svgNamespace, 'style');
+        style.textContent = `
+            .point.visible {
+                fill: #4CAF50;
+                stroke: #2E7D32;
+                stroke-width: 2.5;
+            }
+            .point.invisible {
+                fill: none;
+                stroke: #CCCCCC;
+                stroke-width: 1.5;
+            }
+            .fixation-point {
+                fill: none;
+                stroke: #F44336;
+                stroke-width: 3;
+            }
+            .visible-region {
+                fill: rgba(76, 175, 80, 0.2);
+                stroke: #4CAF50;
+                stroke-width: 1;
+            }
+            .diameter-line {
+                stroke: #F44336;
+                stroke-width: 3;
+                stroke-dasharray: 8, 4;
+            }
+            .diameter-endpoint {
+                fill: #F44336;
+                stroke: #C62828;
+                stroke-width: 2;
+            }
+            line[stroke="#ddd"], line[stroke="#eee"] {
+                stroke: #ddd;
+                stroke-width: 1;
+            }
+            circle[stroke="#eee"] {
+                fill: none;
+                stroke: #eee;
+                stroke-width: 1;
+            }
+        `;
+        svgClone.insertBefore(style, svgClone.firstChild);
+
         const serializer = new XMLSerializer();
-        const svgString = serializer.serializeToString(svg);
+        const svgString = serializer.serializeToString(svgClone);
 
         // Create canvas
         const canvas = document.createElement('canvas');
@@ -561,6 +638,11 @@ class HumphreyFieldCalculator {
 
                 URL.revokeObjectURL(url);
             });
+        };
+
+        img.onerror = (error) => {
+            console.error('Image load error:', error);
+            alert('画像の保存に失敗しました');
         };
 
         img.src = url;
