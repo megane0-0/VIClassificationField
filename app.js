@@ -228,7 +228,7 @@ class HumphreyFieldCalculator {
         const circle = this.createSVGElement('circle', {
             cx: x,
             cy: y,
-            r: 6,
+            r: 10,
             class: point.isVisible ? 'point visible' : 'point invisible'
         });
 

@@ -271,19 +271,19 @@ footer {
 }
 
 .point:hover {
-    transform: scale(1.2);
+    transform: scale(1.15);
 }
 
 .point.visible {
     fill: #4CAF50;
     stroke: #2E7D32;
-    stroke-width: 2;
+    stroke-width: 2.5;
 }
 
 .point.invisible {
     fill: none;
     stroke: #CCCCCC;
-    stroke-width: 1;
+    stroke-width: 1.5;
 }
 
 .fixation-point {
