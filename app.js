@@ -225,6 +225,20 @@ class HumphreyFieldCalculator {
         const x = centerX + point.x * this.scale;
         const y = centerY - point.y * this.scale; // Invert Y for screen coordinates
 
+        // Create a group for this point
+        const pointGroup = this.createSVGElement('g', {
+            class: 'point-group'
+        });
+
+        // Add a larger transparent circle for easier clicking
+        const hitArea = this.createSVGElement('circle', {
+            cx: x,
+            cy: y,
+            r: 16, // Larger radius for click area
+            class: 'point-hitarea'
+        });
+
+        // Add the visible circle
         const circle = this.createSVGElement('circle', {
             cx: x,
             cy: y,
@@ -232,11 +246,14 @@ class HumphreyFieldCalculator {
             class: point.isVisible ? 'point visible' : 'point invisible'
         });
 
-        circle.addEventListener('click', () => {
+        // Add click handler to the group
+        pointGroup.addEventListener('click', () => {
             this.togglePoint(point.id);
         });
 
-        group.appendChild(circle);
+        pointGroup.appendChild(hitArea);
+        pointGroup.appendChild(circle);
+        group.appendChild(pointGroup);
     }
 
     renderVisibleRegion(group, centerX, centerY) {
@@ -564,6 +581,10 @@ class HumphreyFieldCalculator {
         // Add inline styles to the cloned SVG
         const style = document.createElementNS(this.svgNamespace, 'style');
         style.textContent = `
+            .point-hitarea {
+                fill: transparent;
+                stroke: none;
+            }
             .point.visible {
                 fill: #4CAF50;
                 stroke: #2E7D32;

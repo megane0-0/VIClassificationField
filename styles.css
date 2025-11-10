@@ -265,13 +265,22 @@ footer {
 }
 
 /* SVG Point styles */
-.point {
+.point-group {
     cursor: pointer;
-    transition: all 0.2s;
 }
 
-.point:hover {
-    transform: scale(1.15);
+.point-hitarea {
+    fill: transparent;
+    stroke: none;
+}
+
+.point {
+    pointer-events: none; /* Only the group handles clicks */
+    transition: all 0.15s;
+}
+
+.point-group:hover .point {
+    filter: brightness(1.2);
 }
 
 .point.visible {
