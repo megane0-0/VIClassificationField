@@ -1,0 +1,547 @@
+/**
+ * Goldmann Visual Field FF120 Maximum Diameter Calculator
+ * IBTA Visual Classification Field Support Tool
+ * Version 1.0 - 2025-11-10
+ */
+
+class FF120Calculator {
+    constructor() {
+        this.points = [];
+        this.result = null;
+        this.svg = document.getElementById('visualField');
+        this.init();
+    }
+
+    /**
+     * Initialize the calculator
+     */
+    init() {
+        this.points = this.generateFF120Points();
+        this.renderPoints();
+        this.renderRadialLines();
+        this.attachEventListeners();
+        this.updateResults();
+    }
+
+    /**
+     * Generate FF120 test points (120 points in 12 directions)
+     * Based on HFA3 Figure A-17: Full Field 120 Test Pattern
+     */
+    generateFF120Points() {
+        const points = [];
+        let id = 0;
+
+        // 12 directions at 30-degree intervals
+        const directions = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
+
+        // 10 points per direction at 5-degree intervals
+        const radii = [5, 10, 15, 20, 25, 30, 35, 40, 45, 50];
+
+        for (const direction of directions) {
+            for (const radius of radii) {
+                const radians = (direction * Math.PI) / 180;
+                const x = radius * Math.cos(radians);
+                const y = -radius * Math.sin(radians); // Negative for SVG coordinate system
+
+                points.push({
+                    id: id++,
+                    x: x,
+                    y: y,
+                    direction: direction,
+                    radius: radius,
+                    isVisible: false
+                });
+            }
+        }
+
+        return points;
+    }
+
+    /**
+     * Render radial grid lines
+     */
+    renderRadialLines() {
+        const gridLines = document.getElementById('gridLines');
+        const directions = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
+
+        directions.forEach(angle => {
+            const radians = (angle * Math.PI) / 180;
+            const x = 55 * Math.cos(radians);
+            const y = -55 * Math.sin(radians);
+
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', '0');
+            line.setAttribute('y1', '0');
+            line.setAttribute('x2', x);
+            line.setAttribute('y2', y);
+            line.setAttribute('class', 'grid-line');
+            gridLines.appendChild(line);
+        });
+    }
+
+    /**
+     * Render test points on SVG
+     */
+    renderPoints() {
+        const container = document.getElementById('testPoints');
+        container.innerHTML = '';
+
+        this.points.forEach(point => {
+            const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            circle.setAttribute('cx', point.x);
+            circle.setAttribute('cy', point.y);
+            circle.setAttribute('r', '0.8');
+            circle.setAttribute('class', `test-point ${point.isVisible ? 'on' : 'off'}`);
+            circle.setAttribute('data-id', point.id);
+
+            // Add tooltip with direction and radius info
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            title.textContent = `方向: ${point.direction}°, 距離: ${point.radius}°`;
+            circle.appendChild(title);
+
+            circle.addEventListener('click', () => this.togglePoint(point.id));
+
+            container.appendChild(circle);
+        });
+    }
+
+    /**
+     * Toggle point visibility
+     */
+    togglePoint(id) {
+        const point = this.points.find(p => p.id === id);
+        if (point) {
+            point.isVisible = !point.isVisible;
+            this.updatePointDisplay(id);
+            this.updateResults();
+        }
+    }
+
+    /**
+     * Update single point display
+     */
+    updatePointDisplay(id) {
+        const circle = document.querySelector(`[data-id="${id}"]`);
+        const point = this.points.find(p => p.id === id);
+        if (circle && point) {
+            circle.setAttribute('class', `test-point ${point.isVisible ? 'on' : 'off'}`);
+        }
+    }
+
+    /**
+     * Calculate boundary points for each direction
+     */
+    calculateBoundaryPoints() {
+        const directions = [0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330];
+        const boundaryPoints = [];
+
+        for (const direction of directions) {
+            // Get all points in this direction, sorted by radius
+            const directionPoints = this.points
+                .filter(p => p.direction === direction)
+                .sort((a, b) => a.radius - b.radius);
+
+            // Find the outermost visible point
+            let lastVisibleIndex = -1;
+            for (let i = directionPoints.length - 1; i >= 0; i--) {
+                if (directionPoints[i].isVisible) {
+                    lastVisibleIndex = i;
+                    break;
+                }
+            }
+
+            if (lastVisibleIndex === -1) {
+                // No visible points in this direction - boundary is at origin
+                boundaryPoints.push({
+                    direction: direction,
+                    x: 0,
+                    y: 0,
+                    radius: 0
+                });
+            } else {
+                const lastVisible = directionPoints[lastVisibleIndex];
+
+                // Check if there's a next point
+                if (lastVisibleIndex + 1 < directionPoints.length) {
+                    const nextPoint = directionPoints[lastVisibleIndex + 1];
+
+                    if (!nextPoint.isVisible) {
+                        // Next point is invisible - boundary is midpoint
+                        const midX = (lastVisible.x + nextPoint.x) / 2;
+                        const midY = (lastVisible.y + nextPoint.y) / 2;
+                        const midRadius = (lastVisible.radius + nextPoint.radius) / 2;
+
+                        boundaryPoints.push({
+                            direction: direction,
+                            x: midX,
+                            y: midY,
+                            radius: midRadius
+                        });
+                    } else {
+                        // Next point is also visible - boundary is at outermost visible point
+                        boundaryPoints.push({
+                            direction: direction,
+                            x: lastVisible.x,
+                            y: lastVisible.y,
+                            radius: lastVisible.radius
+                        });
+                    }
+                } else {
+                    // No more points beyond - boundary is at outermost visible point
+                    boundaryPoints.push({
+                        direction: direction,
+                        x: lastVisible.x,
+                        y: lastVisible.y,
+                        radius: lastVisible.radius
+                    });
+                }
+            }
+        }
+
+        return boundaryPoints;
+    }
+
+    /**
+     * Calculate maximum diameter through fixation point
+     */
+    calculateMaxDiameter(boundaryPoints) {
+        // Check if all boundary points are at origin
+        if (boundaryPoints.every(p => p.radius === 0)) {
+            return {
+                maxDiameter: 0,
+                angleDegrees: 0,
+                endpoint1: null,
+                endpoint2: null,
+                boundaryPoints: boundaryPoints,
+                visibleRegion: null
+            };
+        }
+
+        // Create polygon from boundary points
+        const polygonCoords = boundaryPoints.map(p => [p.x, p.y]);
+        polygonCoords.push(polygonCoords[0]); // Close the polygon
+
+        let visibleRegion;
+        try {
+            visibleRegion = turf.polygon([polygonCoords]);
+        } catch (e) {
+            console.error('Error creating polygon:', e);
+            return {
+                maxDiameter: 0,
+                angleDegrees: 0,
+                endpoint1: null,
+                endpoint2: null,
+                boundaryPoints: boundaryPoints,
+                visibleRegion: null
+            };
+        }
+
+        // Search for maximum diameter
+        let maxDiameter = 0;
+        let maxAngle = 0;
+        let maxEndpoint1 = null;
+        let maxEndpoint2 = null;
+
+        const farDistance = 100; // Sufficiently large value
+
+        // Test lines through fixation point at 0.5-degree increments
+        for (let angle = 0; angle < 180; angle += 0.5) {
+            const radians = (angle * Math.PI) / 180;
+
+            // Line endpoints
+            const x1 = farDistance * Math.cos(radians);
+            const y1 = -farDistance * Math.sin(radians);
+            const x2 = -farDistance * Math.cos(radians);
+            const y2 = -farDistance * Math.sin(radians);
+
+            const line = turf.lineString([[x1, y1], [x2, y2]]);
+
+            try {
+                const intersections = turf.lineIntersect(line, visibleRegion);
+
+                if (intersections.features.length >= 2) {
+                    // Calculate diameter between two intersection points
+                    const p1 = intersections.features[0];
+                    const p2 = intersections.features[1];
+                    const diameter = turf.distance(p1, p2, { units: 'degrees' });
+
+                    if (diameter > maxDiameter) {
+                        maxDiameter = diameter;
+                        maxAngle = angle;
+                        maxEndpoint1 = {
+                            x: p1.geometry.coordinates[0],
+                            y: p1.geometry.coordinates[1]
+                        };
+                        maxEndpoint2 = {
+                            x: p2.geometry.coordinates[0],
+                            y: p2.geometry.coordinates[1]
+                        };
+                    }
+                }
+            } catch (e) {
+                // No intersection or error - skip
+                continue;
+            }
+        }
+
+        return {
+            maxDiameter: maxDiameter,
+            angleDegrees: maxAngle,
+            endpoint1: maxEndpoint1,
+            endpoint2: maxEndpoint2,
+            boundaryPoints: boundaryPoints,
+            visibleRegion: visibleRegion
+        };
+    }
+
+    /**
+     * Update calculation results and visualization
+     */
+    updateResults() {
+        const boundaryPoints = this.calculateBoundaryPoints();
+        this.result = this.calculateMaxDiameter(boundaryPoints);
+
+        // Update display
+        this.updateResultDisplay();
+        this.updateVisualization();
+    }
+
+    /**
+     * Update result display panel
+     */
+    updateResultDisplay() {
+        const maxDiameterEl = document.getElementById('maxDiameter');
+        const directionEl = document.getElementById('direction');
+        const pointCountEl = document.getElementById('pointCount');
+        const boundaryDetailsEl = document.getElementById('boundaryPointsDetails');
+
+        const visibleCount = this.points.filter(p => p.isVisible).length;
+        pointCountEl.textContent = `${visibleCount} / 120`;
+
+        if (this.result.maxDiameter === 0) {
+            maxDiameterEl.textContent = '0.0 度';
+            directionEl.textContent = '-';
+        } else {
+            maxDiameterEl.textContent = `${this.result.maxDiameter.toFixed(1)} 度`;
+            directionEl.textContent = `${this.result.angleDegrees.toFixed(1)}° (${this.getDirectionName(this.result.angleDegrees)})`;
+        }
+
+        // Display boundary points details
+        if (this.result.boundaryPoints.length > 0) {
+            boundaryDetailsEl.innerHTML = '<h3>境界点（方向別）:</h3>';
+            this.result.boundaryPoints.forEach(bp => {
+                const item = document.createElement('div');
+                item.className = 'boundary-point-item';
+                item.innerHTML = `
+                    <span>${bp.direction}°:</span>
+                    <span>${bp.radius.toFixed(1)}度</span>
+                `;
+                boundaryDetailsEl.appendChild(item);
+            });
+        }
+    }
+
+    /**
+     * Get direction name in Japanese
+     */
+    getDirectionName(angle) {
+        if (angle >= 0 && angle < 22.5) return '右方向';
+        if (angle >= 22.5 && angle < 67.5) return '右上方向';
+        if (angle >= 67.5 && angle < 112.5) return '上方向';
+        if (angle >= 112.5 && angle < 157.5) return '左上方向';
+        if (angle >= 157.5 && angle <= 180) return '左方向';
+        return '';
+    }
+
+    /**
+     * Update SVG visualization
+     */
+    updateVisualization() {
+        // Clear previous visualization
+        document.getElementById('visibleRegion').innerHTML = '';
+        document.getElementById('boundaryLines').innerHTML = '';
+        document.getElementById('diameterLine').innerHTML = '';
+
+        if (!this.result || this.result.maxDiameter === 0) {
+            return;
+        }
+
+        // Draw visible region
+        if (this.result.visibleRegion) {
+            const coords = this.result.visibleRegion.geometry.coordinates[0];
+            const pathData = coords.map((coord, i) => {
+                const [x, y] = coord;
+                return `${i === 0 ? 'M' : 'L'} ${x} ${y}`;
+            }).join(' ') + ' Z';
+
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', pathData);
+            path.setAttribute('class', 'boundary-line');
+            document.getElementById('visibleRegion').appendChild(path);
+        }
+
+        // Draw maximum diameter line
+        if (this.result.endpoint1 && this.result.endpoint2) {
+            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+            line.setAttribute('x1', this.result.endpoint1.x);
+            line.setAttribute('y1', this.result.endpoint1.y);
+            line.setAttribute('x2', this.result.endpoint2.x);
+            line.setAttribute('y2', this.result.endpoint2.y);
+            line.setAttribute('class', 'diameter-line');
+            document.getElementById('diameterLine').appendChild(line);
+
+            // Draw endpoints
+            [this.result.endpoint1, this.result.endpoint2].forEach(ep => {
+                const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+                circle.setAttribute('cx', ep.x);
+                circle.setAttribute('cy', ep.y);
+                circle.setAttribute('r', '1.2');
+                circle.setAttribute('class', 'diameter-endpoint');
+                document.getElementById('diameterLine').appendChild(circle);
+            });
+        }
+    }
+
+    /**
+     * Select all points
+     */
+    selectAll() {
+        this.points.forEach(point => {
+            point.isVisible = true;
+        });
+        this.renderPoints();
+        this.updateResults();
+    }
+
+    /**
+     * Clear all points
+     */
+    clearAll() {
+        this.points.forEach(point => {
+            point.isVisible = false;
+        });
+        this.renderPoints();
+        this.updateResults();
+    }
+
+    /**
+     * Reset to initial state
+     */
+    reset() {
+        this.clearAll();
+    }
+
+    /**
+     * Generate result text for copying
+     */
+    getResultText() {
+        const now = new Date();
+        const dateStr = now.toLocaleString('ja-JP');
+
+        let text = `ゴールドマン視野検査 (FF120) 最大直径計算結果\n`;
+        text += `========================================\n`;
+        text += `検査タイプ: FF120\n`;
+        text += `最大直径: ${this.result.maxDiameter.toFixed(1)}度\n`;
+
+        if (this.result.angleDegrees !== 0) {
+            text += `方向: ${this.result.angleDegrees.toFixed(1)}° (${this.getDirectionName(this.result.angleDegrees)})\n`;
+        }
+
+        if (this.result.endpoint1 && this.result.endpoint2) {
+            text += `端点1: (${this.result.endpoint1.x.toFixed(1)}, ${this.result.endpoint1.y.toFixed(1)})\n`;
+            text += `端点2: (${this.result.endpoint2.x.toFixed(1)}, ${this.result.endpoint2.y.toFixed(1)})\n`;
+        }
+
+        text += `測定日時: ${dateStr}\n\n`;
+        text += `境界点（方向別）:\n`;
+
+        this.result.boundaryPoints.forEach(bp => {
+            text += `  ${bp.direction.toString().padStart(3)}°: ${bp.radius.toFixed(1)}度\n`;
+        });
+
+        return text;
+    }
+
+    /**
+     * Copy results to clipboard
+     */
+    copyResults() {
+        const text = this.getResultText();
+        navigator.clipboard.writeText(text).then(() => {
+            this.showToast('結果をクリップボードにコピーしました');
+        }).catch(err => {
+            console.error('Failed to copy:', err);
+            alert('コピーに失敗しました');
+        });
+    }
+
+    /**
+     * Save as image (PNG)
+     */
+    saveAsImage() {
+        const svg = document.getElementById('visualField');
+        const svgData = new XMLSerializer().serializeToString(svg);
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+
+        canvas.width = 700;
+        canvas.height = 700;
+
+        const img = new Image();
+        const svgBlob = new Blob([svgData], { type: 'image/svg+xml;charset=utf-8' });
+        const url = URL.createObjectURL(svgBlob);
+
+        img.onload = () => {
+            ctx.fillStyle = 'white';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.drawImage(img, 0, 0);
+            URL.revokeObjectURL(url);
+
+            canvas.toBlob(blob => {
+                const now = new Date();
+                const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
+                const filename = `goldmann_FF120_${timestamp}.png`;
+
+                const a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = filename;
+                a.click();
+                URL.revokeObjectURL(a.href);
+
+                this.showToast('画像を保存しました');
+            });
+        };
+
+        img.src = url;
+    }
+
+    /**
+     * Show toast notification
+     */
+    showToast(message) {
+        const toast = document.createElement('div');
+        toast.className = 'toast';
+        toast.textContent = message;
+        document.body.appendChild(toast);
+
+        setTimeout(() => {
+            toast.remove();
+        }, 3000);
+    }
+
+    /**
+     * Attach event listeners to UI controls
+     */
+    attachEventListeners() {
+        document.getElementById('selectAll').addEventListener('click', () => this.selectAll());
+        document.getElementById('clearAll').addEventListener('click', () => this.clearAll());
+        document.getElementById('reset').addEventListener('click', () => this.reset());
+        document.getElementById('copyResult').addEventListener('click', () => this.copyResults());
+        document.getElementById('saveImage').addEventListener('click', () => this.saveAsImage());
+    }
+}
+
+// Initialize the calculator when DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+    window.calculator = new FF120Calculator();
+});

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ゴールドマン視野検査 (FF120) - 最大直径計算ツール</title>
+    <link rel="stylesheet" href="styles.css">
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ゴールドマン視野検査 (FF120) - 最大直径計算</h1>
+            <p class="subtitle">視覚障害者スポーツのクラス分け判定支援ツール</p>
+        </header>
+
+        <div class="controls">
+            <button id="selectAll" class="btn btn-primary">全選択</button>
+            <button id="clearAll" class="btn btn-secondary">全解除</button>
+            <button id="reset" class="btn btn-secondary">リセット</button>
+        </div>
+
+        <div class="main-content">
+            <div class="canvas-container">
+                <h2>視野測定点マップ（クリックで切り替え）</h2>
+                <div class="legend">
+                    <span class="legend-item">
+                        <span class="legend-dot visible"></span>
+                        <span>緑●=見える</span>
+                    </span>
+                    <span class="legend-item">
+                        <span class="legend-dot invisible"></span>
+                        <span>灰○=見えない</span>
+                    </span>
+                </div>
+                <svg id="visualField" width="700" height="700" viewBox="-60 -60 120 120">
+                    <!-- Grid lines (optional) -->
+                    <g id="gridLines" class="grid-lines">
+                        <!-- Concentric circles -->
+                        <circle cx="0" cy="0" r="10" class="grid-circle" />
+                        <circle cx="0" cy="0" r="20" class="grid-circle" />
+                        <circle cx="0" cy="0" r="30" class="grid-circle" />
+                        <circle cx="0" cy="0" r="40" class="grid-circle" />
+                        <circle cx="0" cy="0" r="50" class="grid-circle" />
+                        <!-- Radial lines -->
+                    </g>
+
+                    <!-- Visible region (filled polygon) -->
+                    <g id="visibleRegion"></g>
+
+                    <!-- Boundary lines -->
+                    <g id="boundaryLines"></g>
+
+                    <!-- Maximum diameter line -->
+                    <g id="diameterLine"></g>
+
+                    <!-- Test points -->
+                    <g id="testPoints"></g>
+
+                    <!-- Fixation point -->
+                    <g id="fixationPoint">
+                        <line x1="-2" y1="0" x2="2" y2="0" stroke="#F44336" stroke-width="0.5" />
+                        <line x1="0" y1="-2" x2="0" y2="2" stroke="#F44336" stroke-width="0.5" />
+                        <circle cx="0" cy="0" r="1" fill="#F44336" />
+                    </g>
+                </svg>
+            </div>
+
+            <div class="results-panel">
+                <h2>📊 計算結果</h2>
+                <div class="result-content">
+                    <div class="result-item">
+                        <span class="result-label">最大直径:</span>
+                        <span id="maxDiameter" class="result-value">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">方向:</span>
+                        <span id="direction" class="result-value">-</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="result-label">選択点数:</span>
+                        <span id="pointCount" class="result-value">0 / 120</span>
+                    </div>
+                    <div id="boundaryPointsDetails" class="boundary-details"></div>
+                </div>
+                <div class="result-actions">
+                    <button id="copyResult" class="btn btn-primary">結果をコピー</button>
+                    <button id="saveImage" class="btn btn-secondary">画像として保存</button>
+                </div>
+            </div>
+        </div>
+
+        <footer>
+            <p>IBTA視覚障害者スポーツクラス分け判定支援ツール</p>
+            <p class="version">バージョン 1.0 | 作成日: 2025年11月10日</p>
+        </footer>
+    </div>
+
+    <script src="ff120-calculator.js"></script>
+</body>
+</html>
