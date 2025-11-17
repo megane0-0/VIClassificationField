@@ -21,9 +21,9 @@ class HumphreyFieldCalculator {
         // Set up event listeners
         this.setupEventListeners();
 
-        // Render initial view
-        this.renderVisualField();
+        // Calculate and render initial view
         this.updateResults();
+        this.renderVisualField();
     }
 
     setupEventListeners() {
@@ -60,24 +60,24 @@ class HumphreyFieldCalculator {
     changeTestType(newType) {
         this.currentTestType = newType;
         this.points = initializePoints(newType);
-        this.renderVisualField();
         this.updateResults();
+        this.renderVisualField();
     }
 
     selectAll() {
         this.points.forEach(point => {
             point.isVisible = true;
         });
-        this.renderVisualField();
         this.updateResults();
+        this.renderVisualField();
     }
 
     deselectAll() {
         this.points.forEach(point => {
             point.isVisible = false;
         });
-        this.renderVisualField();
         this.updateResults();
+        this.renderVisualField();
     }
 
     reset() {
@@ -85,16 +85,16 @@ class HumphreyFieldCalculator {
         this.currentTestType = '10-2';
         document.querySelector('input[value="10-2"]').checked = true;
         this.points = initializePoints(this.currentTestType);
-        this.renderVisualField();
         this.updateResults();
+        this.renderVisualField();
     }
 
     togglePoint(pointId) {
         const point = this.points.find(p => p.id === pointId);
         if (point) {
             point.isVisible = !point.isVisible;
-            this.renderVisualField();
             this.updateResults();
+            this.renderVisualField();
         }
     }
 
@@ -513,6 +513,7 @@ class HumphreyFieldCalculator {
 
     updateResults() {
         this.result = this.calculateMaxDiameter();
+        console.log('Calculation result:', this.result);
 
         // Update display
         const diameterEl = document.getElementById('maxDiameter');
@@ -520,7 +521,12 @@ class HumphreyFieldCalculator {
         const endpoint1El = document.getElementById('endpoint1');
         const endpoint2El = document.getElementById('endpoint2');
 
-        if (this.result.maxDiameter > 0) {
+        if (!diameterEl || !directionEl || !endpoint1El || !endpoint2El) {
+            console.error('Result display elements not found');
+            return;
+        }
+
+        if (this.result && this.result.maxDiameter > 0) {
             diameterEl.textContent = `${this.result.maxDiameter.toFixed(1)} 度`;
 
             const directionText = this.getDirectionText(this.result.angleDegrees);
@@ -538,9 +544,6 @@ class HumphreyFieldCalculator {
             endpoint1El.textContent = '--';
             endpoint2El.textContent = '--';
         }
-
-        // Re-render to show visible region and diameter line
-        this.renderVisualField();
     }
 
     getDirectionText(angle) {
