@@ -495,61 +495,45 @@ class HumphreyFieldCalculator {
                             }
                         }
 
-                        // Special case: if all points are on one side, try to find diameter anyway
+                        // Special case: if all points are on one side, try to find major axis anyway
                         if (side1Points.length === 0 || side2Points.length === 0) {
                             // All intersection points are on the same side
-                            // Sort all points by distance and find the two furthest reachable points
+                            // Find the two furthest points (for major axis, gaps don't matter)
                             const allPoints = [...side1Points, ...side2Points];
                             if (allPoints.length >= 2) {
-                                // Sort by distance from fixation (furthest first)
-                                const sortedPoints = allPoints.map(p => {
+                                let max1 = 0, max2 = 0;
+                                let p1 = null, p2 = null;
+
+                                for (const p of allPoints) {
                                     const coord = p.geometry.coordinates;
                                     const dist = Math.sqrt(
                                         Math.pow(coord[0] - fixationPoint[0], 2) +
                                         Math.pow(coord[1] - fixationPoint[1], 2)
                                     );
-                                    return { point: p, dist: dist };
-                                }).sort((a, b) => b.dist - a.dist);
-
-                                // Try to find two reachable points
-                                const reachablePoints = [];
-                                for (const {point, dist} of sortedPoints) {
-                                    const numSamples = Math.max(20, Math.ceil(dist / 0.25));
-                                    let isReachable = true;
-
-                                    for (let i = 1; i <= numSamples; i++) {
-                                        const t = i / numSamples;
-                                        const sampleX = fixationPoint[0] * (1 - t) + point.geometry.coordinates[0] * t;
-                                        const sampleY = fixationPoint[1] * (1 - t) + point.geometry.coordinates[1] * t;
-                                        const samplePoint = turf.point([sampleX, sampleY]);
-
-                                        if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                            isReachable = false;
-                                            break;
-                                        }
-                                    }
-
-                                    if (isReachable) {
-                                        reachablePoints.push({ point: point.geometry.coordinates, dist: dist });
-                                        if (reachablePoints.length >= 2) {
-                                            break; // Found two reachable points
-                                        }
+                                    if (dist > max1) {
+                                        max2 = max1;
+                                        p2 = p1;
+                                        max1 = dist;
+                                        p1 = coord;
+                                    } else if (dist > max2) {
+                                        max2 = dist;
+                                        p2 = coord;
                                     }
                                 }
 
-                                if (reachablePoints.length >= 2) {
-                                    const totalDist = reachablePoints[0].dist + reachablePoints[1].dist;
+                                if (p1 && p2) {
+                                    const totalDist = max1 + max2;
 
                                     if (totalDist > maxDiameter) {
                                         maxDiameter = totalDist;
                                         maxAngle = angle;
                                         maxEndpoint1 = {
-                                            x: reachablePoints[0].point[0],
-                                            y: reachablePoints[0].point[1]
+                                            x: p1[0],
+                                            y: p1[1]
                                         };
                                         maxEndpoint2 = {
-                                            x: reachablePoints[1].point[0],
-                                            y: reachablePoints[1].point[1]
+                                            x: p2[0],
+                                            y: p2[1]
                                         };
                                     }
                                 }
@@ -557,85 +541,45 @@ class HumphreyFieldCalculator {
                             continue; // Skip normal processing
                         }
 
-                        // Sort points by distance from fixation (furthest first)
-                        // We'll try each point from furthest to nearest to find the furthest
-                        // point that has a continuous visible path from the fixation point
-                        const side1Sorted = side1Points.map(p => {
-                            const coord = p.geometry.coordinates;
-                            const dist = Math.sqrt(
-                                Math.pow(coord[0] - fixationPoint[0], 2) +
-                                Math.pow(coord[1] - fixationPoint[1], 2)
-                            );
-                            return { point: p, dist: dist };
-                        }).sort((a, b) => b.dist - a.dist); // Sort by distance, furthest first
+                        // MAJOR AXIS (長径) calculation:
+                        // Find the furthest visible point in each direction, regardless of gaps.
+                        // This is NOT diameter (which requires continuous path), but major axis.
 
-                        const side2Sorted = side2Points.map(p => {
-                            const coord = p.geometry.coordinates;
-                            const dist = Math.sqrt(
-                                Math.pow(coord[0] - fixationPoint[0], 2) +
-                                Math.pow(coord[1] - fixationPoint[1], 2)
-                            );
-                            return { point: p, dist: dist };
-                        }).sort((a, b) => b.dist - a.dist);
-
-                        // Find the furthest reachable point on side 1
-                        let maxReachableDist1 = 0;
+                        // Find furthest point on side 1 (simply the maximum distance)
+                        let maxDist1 = 0;
                         let bestEndpoint1 = null;
 
-                        for (const {point, dist} of side1Sorted) {
-                            // Check if this point is reachable via a continuous visible path
-                            const numSamples = Math.max(20, Math.ceil(dist / 0.25));
-                            let isReachable = true;
-
-                            for (let i = 1; i <= numSamples; i++) {
-                                const t = i / numSamples;
-                                const sampleX = fixationPoint[0] * (1 - t) + point.geometry.coordinates[0] * t;
-                                const sampleY = fixationPoint[1] * (1 - t) + point.geometry.coordinates[1] * t;
-                                const samplePoint = turf.point([sampleX, sampleY]);
-
-                                if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                    isReachable = false;
-                                    break;
-                                }
-                            }
-
-                            if (isReachable) {
-                                maxReachableDist1 = dist;
-                                bestEndpoint1 = point.geometry.coordinates;
-                                break; // Found the furthest reachable point
+                        for (const p of side1Points) {
+                            const coord = p.geometry.coordinates;
+                            const dist = Math.sqrt(
+                                Math.pow(coord[0] - fixationPoint[0], 2) +
+                                Math.pow(coord[1] - fixationPoint[1], 2)
+                            );
+                            if (dist > maxDist1) {
+                                maxDist1 = dist;
+                                bestEndpoint1 = coord;
                             }
                         }
 
-                        // Find the furthest reachable point on side 2
-                        let maxReachableDist2 = 0;
+                        // Find furthest point on side 2
+                        let maxDist2 = 0;
                         let bestEndpoint2 = null;
 
-                        for (const {point, dist} of side2Sorted) {
-                            const numSamples = Math.max(20, Math.ceil(dist / 0.25));
-                            let isReachable = true;
-
-                            for (let i = 1; i <= numSamples; i++) {
-                                const t = i / numSamples;
-                                const sampleX = fixationPoint[0] * (1 - t) + point.geometry.coordinates[0] * t;
-                                const sampleY = fixationPoint[1] * (1 - t) + point.geometry.coordinates[1] * t;
-                                const samplePoint = turf.point([sampleX, sampleY]);
-
-                                if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                    isReachable = false;
-                                    break;
-                                }
-                            }
-
-                            if (isReachable) {
-                                maxReachableDist2 = dist;
-                                bestEndpoint2 = point.geometry.coordinates;
-                                break;
+                        for (const p of side2Points) {
+                            const coord = p.geometry.coordinates;
+                            const dist = Math.sqrt(
+                                Math.pow(coord[0] - fixationPoint[0], 2) +
+                                Math.pow(coord[1] - fixationPoint[1], 2)
+                            );
+                            if (dist > maxDist2) {
+                                maxDist2 = dist;
+                                bestEndpoint2 = coord;
                             }
                         }
 
-                        // Calculate total diameter using the furthest reachable points
+                        // Calculate total major axis length
                         if (bestEndpoint1 && bestEndpoint2) {
-                            const totalDist = maxReachableDist1 + maxReachableDist2;
+                            const totalDist = maxDist1 + maxDist2;
 
                             if (totalDist > maxDiameter) {
                                 maxDiameter = totalDist;
@@ -648,7 +592,7 @@ class HumphreyFieldCalculator {
                                     x: bestEndpoint2[0],
                                     y: bestEndpoint2[1]
                                 };
-                                console.log(`New max at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (${maxReachableDist1.toFixed(2)}+${maxReachableDist2.toFixed(2)})`);
+                                console.log(`New max at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (${maxDist1.toFixed(2)}+${maxDist2.toFixed(2)})`);
                             }
                         }
                     }
