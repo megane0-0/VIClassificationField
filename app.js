@@ -523,20 +523,28 @@ class HumphreyFieldCalculator {
 
                                 if (p1 && p2) {
                                     // Check if the line segment between p1 and p2 is inside the visible region
-                                    const segmentLine = turf.lineString([
-                                        p1.geometry.coordinates,
-                                        p2.geometry.coordinates
-                                    ]);
+                                    // Sample multiple points along the line for accuracy
+                                    const lineDistance = Math.sqrt(
+                                        Math.pow(p2.geometry.coordinates[0] - p1.geometry.coordinates[0], 2) +
+                                        Math.pow(p2.geometry.coordinates[1] - p1.geometry.coordinates[1], 2)
+                                    );
+                                    const numSamples = Math.max(20, Math.ceil(lineDistance / 0.25));
+                                    let allSamplesInside = true;
 
-                                    // Sample points along the line to check if it's inside
-                                    const midpoint = [
-                                        (p1.geometry.coordinates[0] + p2.geometry.coordinates[0]) / 2,
-                                        (p1.geometry.coordinates[1] + p2.geometry.coordinates[1]) / 2
-                                    ];
-                                    const midPoint = turf.point(midpoint);
+                                    for (let i = 0; i <= numSamples; i++) {
+                                        const t = i / numSamples;
+                                        const sampleX = p1.geometry.coordinates[0] * (1 - t) + p2.geometry.coordinates[0] * t;
+                                        const sampleY = p1.geometry.coordinates[1] * (1 - t) + p2.geometry.coordinates[1] * t;
+                                        const samplePoint = turf.point([sampleX, sampleY]);
 
-                                    // Check if midpoint is inside visible region
-                                    if (turf.booleanPointInPolygon(midPoint, visibleRegion)) {
+                                        if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
+                                            allSamplesInside = false;
+                                            break;
+                                        }
+                                    }
+
+                                    // Check if all samples are inside visible region
+                                    if (allSamplesInside) {
                                         const totalDist = turf.distance(
                                             turf.point(p1.geometry.coordinates),
                                             turf.point(p2.geometry.coordinates),
@@ -589,8 +597,14 @@ class HumphreyFieldCalculator {
                         // Calculate total diameter
                         if (bestPoint1 && bestPoint2) {
                             // Check if the line segment passes through the visible region
-                            // Sample several points along the line
-                            const numSamples = 5;
+                            // Sample points along the line (use more samples for better accuracy)
+                            // Number of samples should be proportional to the distance
+                            const lineDistance = Math.sqrt(
+                                Math.pow(bestPoint2.geometry.coordinates[0] - bestPoint1.geometry.coordinates[0], 2) +
+                                Math.pow(bestPoint2.geometry.coordinates[1] - bestPoint1.geometry.coordinates[1], 2)
+                            );
+                            // Sample at least every 0.25 degrees along the line
+                            const numSamples = Math.max(20, Math.ceil(lineDistance / 0.25));
                             let allSamplesInside = true;
 
                             for (let i = 0; i <= numSamples; i++) {
@@ -621,9 +635,13 @@ class HumphreyFieldCalculator {
                                         y: bestPoint2.geometry.coordinates[1]
                                     };
                                     // Log when we find a new max
-                                    if (angle % 45 === 0 || maxDiameter < 5) {
-                                        console.log(`New max at angle ${angle}: ${totalDist.toFixed(2)}`);
-                                    }
+                                    console.log(`New max at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees`);
+                                }
+                            } else {
+                                // Log when a potentially good diameter is rejected
+                                const totalDist = maxDistToFix1 + maxDistToFix2;
+                                if (totalDist > maxDiameter * 0.9 && totalDist > 5) {
+                                    console.log(`Rejected at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (line exits visible region)`);
                                 }
                             }
                         }
