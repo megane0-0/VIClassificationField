@@ -487,6 +487,62 @@ class HumphreyFieldCalculator {
                         // Debug log for first angle
                         if (angle === 0) {
                             console.log(`Side1 points: ${side1Points.length}, Side2 points: ${side2Points.length}`);
+                            if (side1Points.length > 0) {
+                                console.log('Side1 first point:', side1Points[0].geometry.coordinates);
+                            }
+                            if (side2Points.length > 0) {
+                                console.log('Side2 first point:', side2Points[0].geometry.coordinates);
+                            }
+                        }
+
+                        // Special case: if all points are on one side, try to find diameter anyway
+                        if (side1Points.length === 0 || side2Points.length === 0) {
+                            // All intersection points are on the same side
+                            // Find the two furthest points from fixation
+                            const allPoints = [...side1Points, ...side2Points];
+                            if (allPoints.length >= 2) {
+                                let max1 = 0, max2 = 0;
+                                let p1 = null, p2 = null;
+
+                                for (const p of allPoints) {
+                                    const coord = p.geometry.coordinates;
+                                    const dist = Math.sqrt(
+                                        Math.pow(coord[0] - fixationPoint[0], 2) +
+                                        Math.pow(coord[1] - fixationPoint[1], 2)
+                                    );
+                                    if (dist > max1) {
+                                        max2 = max1;
+                                        p2 = p1;
+                                        max1 = dist;
+                                        p1 = p;
+                                    } else if (dist > max2) {
+                                        max2 = dist;
+                                        p2 = p;
+                                    }
+                                }
+
+                                if (p1 && p2) {
+                                    const totalDist = turf.distance(
+                                        turf.point(p1.geometry.coordinates),
+                                        turf.point(p2.geometry.coordinates),
+                                        { units: 'degrees' }
+                                    );
+
+                                    if (totalDist > maxDiameter) {
+                                        maxDiameter = totalDist;
+                                        maxAngle = angle;
+                                        maxEndpoint1 = {
+                                            x: p1.geometry.coordinates[0],
+                                            y: p1.geometry.coordinates[1]
+                                        };
+                                        maxEndpoint2 = {
+                                            x: p2.geometry.coordinates[0],
+                                            y: p2.geometry.coordinates[1]
+                                        };
+                                    }
+                                }
+                            }
+                            continue; // Skip normal processing
                         }
 
                         // Find furthest point on each side (using Euclidean distance)
