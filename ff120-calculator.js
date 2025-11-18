@@ -190,172 +190,202 @@ class FF120Calculator {
     }
 
     /**
-     * Calculate boundary points by analyzing all directions
+     * Check if a point at (x, y) is visible based on nearest neighbor interpolation
+     * @param {number} x - X coordinate
+     * @param {number} y - Y coordinate
+     * @returns {boolean} - True if the nearest test point is visible
+     */
+    isPointVisible(x, y) {
+        if (this.points.length === 0) return false;
+
+        // Find nearest test point
+        let nearestPoint = this.points[0];
+        let minDistance = Math.sqrt(
+            Math.pow(x - nearestPoint.x, 2) + Math.pow(y - nearestPoint.y, 2)
+        );
+
+        for (let i = 1; i < this.points.length; i++) {
+            const point = this.points[i];
+            const distance = Math.sqrt(
+                Math.pow(x - point.x, 2) + Math.pow(y - point.y, 2)
+            );
+
+            if (distance < minDistance) {
+                minDistance = distance;
+                nearestPoint = point;
+            }
+        }
+
+        return nearestPoint.isVisible;
+    }
+
+    /**
+     * Calculate visible segments along a line through the fixation point
+     * @param {number} angleDegrees - Angle in degrees (0 = right, counterclockwise)
+     * @returns {Array} Array of visible segments {start, end} where start and end are distances from origin
+     */
+    calculateVisibleSegments(angleDegrees) {
+        const angleRadians = (angleDegrees * Math.PI) / 180;
+        const maxRadius = 60; // Maximum radius to check
+        const step = 0.1; // Step size in degrees
+
+        const segments = [];
+        let currentSegment = null;
+
+        // Check points along the line from -maxRadius to +maxRadius
+        for (let radius = -maxRadius; radius <= maxRadius; radius += step) {
+            const x = radius * Math.cos(angleRadians);
+            const y = radius * Math.sin(angleRadians);
+
+            const isVisible = this.isPointVisible(x, y);
+
+            if (isVisible) {
+                if (currentSegment === null) {
+                    currentSegment = { start: radius, end: radius };
+                } else {
+                    currentSegment.end = radius;
+                }
+            } else {
+                if (currentSegment !== null) {
+                    segments.push(currentSegment);
+                    currentSegment = null;
+                }
+            }
+        }
+
+        // Save any remaining segment
+        if (currentSegment !== null) {
+            segments.push(currentSegment);
+        }
+
+        return segments;
+    }
+
+    /**
+     * Calculate total visible length along a diameter line
+     * @param {number} angleDegrees - Angle in degrees
+     * @returns {number} Total visible length in degrees
+     */
+    calculateVisibleLength(angleDegrees) {
+        const segments = this.calculateVisibleSegments(angleDegrees);
+
+        // Calculate total length of all visible segments
+        let totalLength = 0;
+        for (const segment of segments) {
+            totalLength += Math.abs(segment.end - segment.start);
+        }
+
+        return totalLength;
+    }
+
+    /**
+     * Calculate boundary points by analyzing all directions (for visualization)
      */
     calculateBoundaryPoints() {
-        // Group points by direction (rounded to nearest degree)
-        const directionGroups = {};
-
-        this.points.forEach(point => {
-            const dir = point.direction;
-            if (!directionGroups[dir]) {
-                directionGroups[dir] = [];
-            }
-            directionGroups[dir].push(point);
-        });
-
         const boundaryPoints = [];
+        const angleStep = 1; // Check every 1 degree
 
-        // Get unique directions and sort them
-        const directions = Object.keys(directionGroups).map(Number).sort((a, b) => a - b);
+        for (let angle = 0; angle < 360; angle += angleStep) {
+            const angleRadians = (angle * Math.PI) / 180;
+            const maxRadius = 60;
 
-        directions.forEach(direction => {
-            const dirPoints = directionGroups[direction].sort((a, b) => a.radius - b.radius);
+            // Find the outermost visible point in this direction
+            let maxVisibleRadius = 0;
 
-            // Find outermost visible point
-            let lastVisibleIndex = -1;
-            for (let i = dirPoints.length - 1; i >= 0; i--) {
-                if (dirPoints[i].isVisible) {
-                    lastVisibleIndex = i;
-                    break;
+            for (let radius = 0; radius <= maxRadius; radius += 0.5) {
+                const x = radius * Math.cos(angleRadians);
+                const y = radius * Math.sin(angleRadians);
+
+                if (this.isPointVisible(x, y)) {
+                    maxVisibleRadius = radius;
                 }
             }
 
-            if (lastVisibleIndex === -1) {
-                // No visible points in this direction - boundary at origin
-                boundaryPoints.push({
-                    direction: direction,
-                    x: 0,
-                    y: 0,
-                    radius: 0
-                });
-            } else {
-                const lastVisible = dirPoints[lastVisibleIndex];
-
-                // Check if there's a next point
-                if (lastVisibleIndex + 1 < dirPoints.length) {
-                    const nextPoint = dirPoints[lastVisibleIndex + 1];
-
-                    if (!nextPoint.isVisible) {
-                        // Next point is invisible - boundary is midpoint
-                        const midX = (lastVisible.x + nextPoint.x) / 2;
-                        const midY = (lastVisible.y + nextPoint.y) / 2;
-                        const midRadius = (lastVisible.radius + nextPoint.radius) / 2;
-
-                        boundaryPoints.push({
-                            direction: direction,
-                            x: midX,
-                            y: midY,
-                            radius: midRadius
-                        });
-                    } else {
-                        // Next point is also visible - boundary at outermost visible point
-                        boundaryPoints.push({
-                            direction: direction,
-                            x: lastVisible.x,
-                            y: lastVisible.y,
-                            radius: lastVisible.radius
-                        });
-                    }
-                } else {
-                    // No more points beyond - boundary at outermost visible point
-                    boundaryPoints.push({
-                        direction: direction,
-                        x: lastVisible.x,
-                        y: lastVisible.y,
-                        radius: lastVisible.radius
-                    });
-                }
-            }
-        });
-
-        // Sort by direction
-        boundaryPoints.sort((a, b) => a.direction - b.direction);
+            boundaryPoints.push({
+                direction: angle,
+                x: maxVisibleRadius * Math.cos(angleRadians),
+                y: maxVisibleRadius * Math.sin(angleRadians),
+                radius: maxVisibleRadius
+            });
+        }
 
         return boundaryPoints;
     }
 
     /**
      * Calculate maximum diameter through fixation point
+     * Uses nearest neighbor interpolation and calculates visible length only
      */
     calculateMaxDiameter(boundaryPoints) {
-        // Check if all boundary points are at origin
-        if (boundaryPoints.every(p => p.radius === 0)) {
+        // Check if any points are visible
+        const hasVisiblePoints = this.points.some(p => p.isVisible);
+
+        if (!hasVisiblePoints) {
             return {
                 maxDiameter: 0,
                 angleDegrees: 0,
                 endpoint1: null,
                 endpoint2: null,
                 boundaryPoints: boundaryPoints,
-                visibleRegion: null
+                visibleRegion: null,
+                visibleSegments: []
             };
         }
 
-        // Create polygon from boundary points
-        const polygonCoords = boundaryPoints.map(p => [p.x, -p.y]); // Flip Y for Turf.js
-        polygonCoords.push(polygonCoords[0]); // Close the polygon
+        // Create polygon from boundary points for visualization
+        let visibleRegion = null;
+        if (boundaryPoints.length > 2) {
+            const polygonCoords = boundaryPoints.map(p => [p.x, -p.y]); // Flip Y for Turf.js
+            polygonCoords.push(polygonCoords[0]); // Close the polygon
 
-        let visibleRegion;
-        try {
-            visibleRegion = turf.polygon([polygonCoords]);
-        } catch (e) {
-            console.error('Error creating polygon:', e);
-            return {
-                maxDiameter: 0,
-                angleDegrees: 0,
-                endpoint1: null,
-                endpoint2: null,
-                boundaryPoints: boundaryPoints,
-                visibleRegion: null
-            };
+            try {
+                visibleRegion = turf.polygon([polygonCoords]);
+            } catch (e) {
+                console.warn('Could not create polygon for visualization:', e);
+            }
         }
 
-        // Search for maximum diameter
+        // Search for maximum visible diameter
         let maxDiameter = 0;
         let maxAngle = 0;
-        let maxEndpoint1 = null;
-        let maxEndpoint2 = null;
-
-        const farDistance = 100; // Sufficiently large value
+        let maxSegments = [];
 
         // Test lines through fixation point at 0.5-degree increments
         for (let angle = 0; angle < 180; angle += 0.5) {
-            const radians = (angle * Math.PI) / 180;
+            const visibleLength = this.calculateVisibleLength(angle);
 
-            // Line endpoints (in Turf.js coordinate system with flipped Y)
-            const x1 = farDistance * Math.cos(radians);
-            const y1 = -farDistance * Math.sin(radians);
-            const x2 = -farDistance * Math.cos(radians);
-            const y2 = -(-farDistance * Math.sin(radians));
-
-            const line = turf.lineString([[x1, y1], [x2, y2]]);
-
-            try {
-                const intersections = turf.lineIntersect(line, visibleRegion);
-
-                if (intersections.features.length >= 2) {
-                    // Calculate diameter between two intersection points
-                    const p1 = intersections.features[0];
-                    const p2 = intersections.features[1];
-                    const diameter = turf.distance(p1, p2, { units: 'degrees' });
-
-                    if (diameter > maxDiameter) {
-                        maxDiameter = diameter;
-                        maxAngle = angle;
-                        maxEndpoint1 = {
-                            x: p1.geometry.coordinates[0],
-                            y: p1.geometry.coordinates[1]
-                        };
-                        maxEndpoint2 = {
-                            x: p2.geometry.coordinates[0],
-                            y: p2.geometry.coordinates[1]
-                        };
-                    }
-                }
-            } catch (e) {
-                // No intersection or error - skip
-                continue;
+            if (visibleLength > maxDiameter) {
+                maxDiameter = visibleLength;
+                maxAngle = angle;
+                maxSegments = this.calculateVisibleSegments(angle);
             }
+        }
+
+        // Calculate endpoints from the maximum segments
+        let maxEndpoint1 = null;
+        let maxEndpoint2 = null;
+
+        if (maxSegments.length > 0) {
+            const angleRadians = (maxAngle * Math.PI) / 180;
+
+            // Find the minimum and maximum extents
+            let minExtent = Infinity;
+            let maxExtent = -Infinity;
+
+            for (const segment of maxSegments) {
+                minExtent = Math.min(minExtent, segment.start, segment.end);
+                maxExtent = Math.max(maxExtent, segment.start, segment.end);
+            }
+
+            maxEndpoint1 = {
+                x: minExtent * Math.cos(angleRadians),
+                y: -minExtent * Math.sin(angleRadians) // Flip Y for SVG
+            };
+
+            maxEndpoint2 = {
+                x: maxExtent * Math.cos(angleRadians),
+                y: -maxExtent * Math.sin(angleRadians) // Flip Y for SVG
+            };
         }
 
         return {
@@ -364,7 +394,8 @@ class FF120Calculator {
             endpoint1: maxEndpoint1,
             endpoint2: maxEndpoint2,
             boundaryPoints: boundaryPoints,
-            visibleRegion: visibleRegion
+            visibleRegion: visibleRegion,
+            visibleSegments: maxSegments
         };
     }
 
@@ -459,17 +490,29 @@ class FF120Calculator {
             document.getElementById('visibleRegion').appendChild(path);
         }
 
-        // Draw maximum diameter line
-        if (this.result.endpoint1 && this.result.endpoint2) {
-            const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-            line.setAttribute('x1', this.result.endpoint1.x);
-            line.setAttribute('y1', this.result.endpoint1.y);
-            line.setAttribute('x2', this.result.endpoint2.x);
-            line.setAttribute('y2', this.result.endpoint2.y);
-            line.setAttribute('class', 'diameter-line');
-            document.getElementById('diameterLine').appendChild(line);
+        // Draw visible segments of the maximum diameter line
+        if (this.result.visibleSegments && this.result.visibleSegments.length > 0) {
+            const angleRadians = (this.result.angleDegrees * Math.PI) / 180;
 
-            // Draw endpoints
+            this.result.visibleSegments.forEach(segment => {
+                const x1 = segment.start * Math.cos(angleRadians);
+                const y1 = -segment.start * Math.sin(angleRadians); // Flip Y for SVG
+                const x2 = segment.end * Math.cos(angleRadians);
+                const y2 = -segment.end * Math.sin(angleRadians); // Flip Y for SVG
+
+                const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                line.setAttribute('x1', x1);
+                line.setAttribute('y1', y1);
+                line.setAttribute('x2', x2);
+                line.setAttribute('y2', y2);
+                line.setAttribute('class', 'diameter-line');
+                line.setAttribute('stroke-width', '0.8');
+                document.getElementById('diameterLine').appendChild(line);
+            });
+        }
+
+        // Draw endpoints (overall extent of all visible segments)
+        if (this.result.endpoint1 && this.result.endpoint2) {
             [this.result.endpoint1, this.result.endpoint2].forEach(ep => {
                 const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
                 circle.setAttribute('cx', ep.x);
