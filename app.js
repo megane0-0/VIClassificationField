@@ -433,8 +433,8 @@ class HumphreyFieldCalculator {
                 };
             }
 
-            // Test lines at different angles
-            for (let angle = 0; angle < 180; angle += 0.5) {
+            // Test lines at different angles (0 to 180 degrees, 0.25 degree increments)
+            for (let angle = 0; angle <= 180; angle += 0.25) {
                 const radians = (angle * Math.PI) / 180;
 
                 // Create line through fixation point
