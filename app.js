@@ -93,6 +93,9 @@ class HumphreyFieldCalculator {
         const point = this.points.find(p => p.id === pointId);
         if (point) {
             point.isVisible = !point.isVisible;
+            console.log(`Point ${pointId} toggled to ${point.isVisible}`);
+            const visibleCount = this.points.filter(p => p.isVisible).length;
+            console.log(`Total visible points: ${visibleCount}`);
             this.updateResults();
             this.renderVisualField();
         }
@@ -334,7 +337,23 @@ class HumphreyFieldCalculator {
         const config = TEST_CONFIGS[this.currentTestType];
         const visiblePoints = this.points.filter(p => p.isVisible);
 
+        console.log(`calculateMaxDiameter called, visible points: ${visiblePoints.length}`);
+
         if (visiblePoints.length === 0) {
+            console.log('No visible points, returning zero result');
+            return {
+                maxDiameter: 0,
+                angleDegrees: 0,
+                endpoint1: null,
+                endpoint2: null,
+                visibleRegion: null
+            };
+        }
+
+        // Check if Turf.js is loaded
+        if (typeof turf === 'undefined') {
+            console.error('Turf.js is not loaded!');
+            alert('エラー: Turf.jsライブラリが読み込まれていません。インターネット接続を確認してください。');
             return {
                 maxDiameter: 0,
                 angleDegrees: 0,
@@ -364,6 +383,7 @@ class HumphreyFieldCalculator {
             });
 
             // Step 2: Merge all squares into visible region
+            console.log('Merging squares...');
             let visibleRegion = squares[0];
             for (let i = 1; i < squares.length; i++) {
                 try {
@@ -372,6 +392,7 @@ class HumphreyFieldCalculator {
                     console.warn('Union failed, continuing...', e);
                 }
             }
+            console.log('Visible region created:', visibleRegion);
 
             // Step 3: Find maximum diameter through fixation point
             const fixationPoint = [0, 0];
@@ -385,9 +406,11 @@ class HumphreyFieldCalculator {
             // Check if fixation point is inside visible region
             const fixPoint = turf.point(fixationPoint);
             const isFixationVisible = turf.booleanPointInPolygon(fixPoint, visibleRegion);
+            console.log('Fixation point visible:', isFixationVisible);
 
             if (!isFixationVisible) {
                 // Fixation point is not visible
+                console.warn('Fixation point is not in visible region!');
                 return {
                     maxDiameter: 0,
                     angleDegrees: 0,
@@ -492,6 +515,8 @@ class HumphreyFieldCalculator {
                 }
             }
 
+            console.log(`Calculation complete: maxDiameter=${maxDiameter}, angle=${maxAngle}`);
+
             return {
                 maxDiameter: maxDiameter,
                 angleDegrees: maxAngle,
@@ -501,6 +526,7 @@ class HumphreyFieldCalculator {
             };
         } catch (error) {
             console.error('Calculation error:', error);
+            alert(`計算エラーが発生しました: ${error.message}`);
             return {
                 maxDiameter: 0,
                 angleDegrees: 0,
