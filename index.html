@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ゴールドマン視野検査 (FF120) - 最大直径計算ツール</title>
+    <title>両眼開放エスターマン視野検査 - 最大直径計算ツール</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
     <script src="ff120-coordinates.js"></script>
@@ -11,16 +11,11 @@
 <body>
     <div class="container">
         <header>
-            <h1>ゴールドマン視野検査 (FF120) - 最大直径計算</h1>
+            <h1>両眼開放エスターマン視野検査 - 最大直径計算</h1>
             <p class="subtitle">視覚障害者スポーツのクラス分け判定支援ツール</p>
         </header>
 
         <div class="controls">
-            <div class="eye-selection">
-                <label class="eye-label">測定眼:</label>
-                <button id="rightEye" class="btn btn-eye active">右目 (OD)</button>
-                <button id="leftEye" class="btn btn-eye">左目 (OS)</button>
-            </div>
             <div class="control-buttons">
                 <button id="selectAll" class="btn btn-primary">全選択</button>
                 <button id="clearAll" class="btn btn-secondary">全解除</button>
@@ -77,10 +72,6 @@
             <div class="results-panel">
                 <h2>📊 計算結果</h2>
                 <div class="result-content">
-                    <div class="result-item">
-                        <span class="result-label">測定眼:</span>
-                        <span id="eyeDisplay" class="result-value">右目 (OD)</span>
-                    </div>
                     <div class="result-item">
                         <span class="result-label">最大直径:</span>
                         <span id="maxDiameter" class="result-value">-</span>

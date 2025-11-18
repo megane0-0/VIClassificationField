@@ -1,103 +1,182 @@
 /**
- * HFA3 Full Field 120 Point Test Pattern Coordinates
- * Based on Figure A-17 from HFA3 Instructions for Use
- * Standard coordinates for right eye (OD)
+ * Binocular Esterman Visual Field Test Pattern Coordinates
+ * Standard 120-point pattern for binocular visual field testing
+ * Used for visual impairment classification in sports
+ *
+ * NOTE: To replace with Goldmann FF120 coordinates:
+ * 1. Replace ESTERMAN_COORDINATES array below with FF120 coordinate data
+ * 2. Update getFF120Coordinates() function to handle right/left eye if needed
+ * 3. Update title and descriptions in this file and index.html
+ * 4. For FF120 with separate right/left eye coordinates:
+ *    - Add FF120_RIGHT_EYE_COORDINATES and FF120_LEFT_EYE_COORDINATES arrays
+ *    - Modify getFF120Coordinates(eye) to return appropriate array based on eye parameter
  */
 
-// FF120 Standard Pattern Coordinates (Right Eye)
+// Binocular Esterman Pattern Coordinates
 // Coordinates are in degrees from fixation point
-// Format: {x: horizontal (positive=temporal/right, negative=nasal/left),
-//          y: vertical (positive=superior/up, negative=inferior/down)}
+// Format: {x: horizontal (positive=right, negative=left),
+//          y: vertical (positive=up, negative=down)}
 
-const FF120_RIGHT_EYE_COORDINATES = [
-    // Central ring (3 degrees)
-    {x: 0, y: 3}, {x: 2.6, y: 1.5}, {x: 2.6, y: -1.5}, {x: 0, y: -3},
-    {x: -2.6, y: -1.5}, {x: -2.6, y: 1.5},
-
-    // Ring at 6 degrees
-    {x: 0, y: 6}, {x: 3, y: 5.2}, {x: 5.2, y: 3}, {x: 6, y: 0},
-    {x: 5.2, y: -3}, {x: 3, y: -5.2}, {x: 0, y: -6}, {x: -3, y: -5.2},
-    {x: -5.2, y: -3}, {x: -6, y: 0}, {x: -5.2, y: 3}, {x: -3, y: 5.2},
-
-    // Ring at 9 degrees
-    {x: 0, y: 9}, {x: 4.5, y: 7.8}, {x: 7.8, y: 4.5}, {x: 9, y: 0},
-    {x: 7.8, y: -4.5}, {x: 4.5, y: -7.8}, {x: 0, y: -9}, {x: -4.5, y: -7.8},
-    {x: -7.8, y: -4.5}, {x: -9, y: 0}, {x: -7.8, y: 4.5}, {x: -4.5, y: 7.8},
-
-    // Ring at 12 degrees
-    {x: 0, y: 12}, {x: 6, y: 10.4}, {x: 10.4, y: 6}, {x: 12, y: 0},
-    {x: 10.4, y: -6}, {x: 6, y: -10.4}, {x: 0, y: -12}, {x: -6, y: -10.4},
-    {x: -10.4, y: -6}, {x: -12, y: 0}, {x: -10.4, y: 6}, {x: -6, y: 10.4},
-
-    // Ring at 15 degrees
-    {x: 0, y: 15}, {x: 7.5, y: 13}, {x: 13, y: 7.5}, {x: 15, y: 0},
-    {x: 13, y: -7.5}, {x: 7.5, y: -13}, {x: 0, y: -15}, {x: -7.5, y: -13},
-    {x: -13, y: -7.5}, {x: -15, y: 0}, {x: -13, y: 7.5}, {x: -7.5, y: 13},
-
-    // Ring at 21 degrees
-    {x: 0, y: 21}, {x: 10.5, y: 18.2}, {x: 18.2, y: 10.5}, {x: 21, y: 0},
-    {x: 18.2, y: -10.5}, {x: 10.5, y: -18.2}, {x: 0, y: -21}, {x: -10.5, y: -18.2},
-    {x: -18.2, y: -10.5}, {x: -21, y: 0}, {x: -18.2, y: 10.5}, {x: -10.5, y: 18.2},
-
-    // Ring at 27 degrees
-    {x: 0, y: 27}, {x: 13.5, y: 23.4}, {x: 23.4, y: 13.5}, {x: 27, y: 0},
-    {x: 23.4, y: -13.5}, {x: 13.5, y: -23.4}, {x: 0, y: -27}, {x: -13.5, y: -23.4},
-    {x: -23.4, y: -13.5}, {x: -27, y: 0}, {x: -23.4, y: 13.5}, {x: -13.5, y: 23.4},
-
-    // Peripheral points - Temporal side (right side for OD)
-    {x: 33, y: 0}, {x: 39, y: 0}, {x: 45, y: 0}, {x: 51, y: 0},
-    {x: 33, y: 9}, {x: 33, y: -9}, {x: 39, y: 11.7}, {x: 39, y: -11.7},
-    {x: 45, y: 13}, {x: 45, y: -13}, {x: 51, y: 15}, {x: 51, y: -15},
-
-    // Peripheral points - Superior temporal
-    {x: 23.3, y: 23.3}, {x: 27.6, y: 27.6}, {x: 31.8, y: 31.8}, {x: 36, y: 36},
-
-    // Peripheral points - Inferior temporal
-    {x: 23.3, y: -23.3}, {x: 27.6, y: -27.6}, {x: 31.8, y: -31.8}, {x: 36, y: -36},
-
-    // Peripheral points - Superior
-    {x: 0, y: 33}, {x: 0, y: 39}, {x: 0, y: 45}, {x: 0, y: 51},
-    {x: 9, y: 33}, {x: -9, y: 33}, {x: 11.7, y: 39}, {x: -11.7, y: 39},
-
-    // Peripheral points - Inferior
-    {x: 0, y: -33}, {x: 0, y: -39}, {x: 0, y: -45}, {x: 0, y: -51},
-    {x: 9, y: -33}, {x: -9, y: -33}, {x: 11.7, y: -39}, {x: -11.7, y: -39},
-
-    // Peripheral points - Nasal side (left side for OD)
-    {x: -33, y: 0}, {x: -39, y: 0}, {x: -27, y: 9}, {x: -27, y: -9},
-
-    // Peripheral points - Superior nasal
-    {x: -23.3, y: 23.3}, {x: -27.6, y: 27.6}, {x: -31.8, y: 31.8},
-
-    // Peripheral points - Inferior nasal
-    {x: -23.3, y: -23.3}, {x: -27.6, y: -27.6}, {x: -31.8, y: -31.8}
+const ESTERMAN_COORDINATES = [
+    {x: -76, y: -3},
+    {x: -76, y: -8},
+    {x: -75, y: 3},
+    {x: -75, y: -13},
+    {x: -74, y: -21},
+    {x: -73, y: 10},
+    {x: -69, y: -30},
+    {x: -57, y: 21},
+    {x: -57, y: 10},
+    {x: -57, y: 3},
+    {x: -57, y: -3},
+    {x: -57, y: -8},
+    {x: -57, y: -13},
+    {x: -57, y: -21},
+    {x: -55, y: -43},
+    {x: -49, y: -30},
+    {x: -42, y: 10},
+    {x: -42, y: 3},
+    {x: -42, y: -3},
+    {x: -42, y: -8},
+    {x: -42, y: -13},
+    {x: -42, y: -21},
+    {x: -34, y: 21},
+    {x: -33, y: -30},
+    {x: -30, y: 10},
+    {x: -30, y: 3},
+    {x: -30, y: -3},
+    {x: -30, y: -8},
+    {x: -30, y: -13},
+    {x: -30, y: -21},
+    {x: -30, y: -53},
+    {x: -29, y: -43},
+    {x: -23, y: 36},
+    {x: -20, y: 10},
+    {x: -20, y: 3},
+    {x: -20, y: -3},
+    {x: -20, y: -8},
+    {x: -20, y: -13},
+    {x: -20, y: -21},
+    {x: -17, y: 21},
+    {x: -17, y: -30},
+    {x: -13, y: 3},
+    {x: -13, y: -3},
+    {x: -13, y: -8},
+    {x: -13, y: -13},
+    {x: -13, y: -21},
+    {x: -10, y: 10},
+    {x: -8, y: 3},
+    {x: -8, y: -3},
+    {x: -8, y: -8},
+    {x: -8, y: -13},
+    {x: -8, y: -21},
+    {x: -8, y: -43},
+    {x: -8, y: -57},
+    {x: -6, y: 21},
+    {x: -5, y: -30},
+    {x: -3, y: 10},
+    {x: -3, y: -8},
+    {x: -3, y: -13},
+    {x: -3, y: -21},
+    {x: 3, y: 10},
+    {x: 3, y: -8},
+    {x: 3, y: -13},
+    {x: 3, y: -21},
+    {x: 5, y: -30},
+    {x: 6, y: 21},
+    {x: 8, y: 3},
+    {x: 8, y: -3},
+    {x: 8, y: -8},
+    {x: 8, y: -13},
+    {x: 8, y: -21},
+    {x: 8, y: -43},
+    {x: 8, y: -57},
+    {x: 10, y: 10},
+    {x: 13, y: 3},
+    {x: 13, y: -3},
+    {x: 13, y: -8},
+    {x: 13, y: -13},
+    {x: 13, y: -21},
+    {x: 17, y: 21},
+    {x: 17, y: -30},
+    {x: 20, y: 10},
+    {x: 20, y: 3},
+    {x: 20, y: -3},
+    {x: 20, y: -8},
+    {x: 20, y: -13},
+    {x: 20, y: -21},
+    {x: 23, y: 36},
+    {x: 29, y: -43},
+    {x: 30, y: 10},
+    {x: 30, y: 3},
+    {x: 30, y: -3},
+    {x: 30, y: -8},
+    {x: 30, y: -13},
+    {x: 30, y: -21},
+    {x: 30, y: -53},
+    {x: 33, y: -30},
+    {x: 34, y: 21},
+    {x: 42, y: 10},
+    {x: 42, y: 3},
+    {x: 42, y: -3},
+    {x: 42, y: -8},
+    {x: 42, y: -13},
+    {x: 42, y: -21},
+    {x: 49, y: -30},
+    {x: 55, y: -43},
+    {x: 57, y: 21},
+    {x: 57, y: 10},
+    {x: 57, y: 3},
+    {x: 57, y: -3},
+    {x: 57, y: -8},
+    {x: 57, y: -13},
+    {x: 57, y: -21},
+    {x: 69, y: -30},
+    {x: 73, y: 10},
+    {x: 74, y: -21},
+    {x: 75, y: 3},
+    {x: 75, y: -13},
+    {x: 76, y: -3},
+    {x: 76, y: -8}
 ];
 
 // Verify we have exactly 120 points
-if (FF120_RIGHT_EYE_COORDINATES.length !== 120) {
-    console.warn(`Expected 120 points, but got ${FF120_RIGHT_EYE_COORDINATES.length}`);
+if (ESTERMAN_COORDINATES.length !== 120) {
+    console.warn(`Expected 120 points, but got ${ESTERMAN_COORDINATES.length}`);
 }
 
 /**
- * Get FF120 coordinates for specified eye
- * @param {string} eye - 'right' or 'left'
+ * Get visual field coordinates
+ * @param {string} eye - Not used for Esterman (binocular test), kept for compatibility
  * @returns {Array} Array of 120 coordinate objects
  */
-function getFF120Coordinates(eye = 'right') {
-    if (eye === 'right') {
-        return FF120_RIGHT_EYE_COORDINATES.map((coord, index) => ({
-            id: index,
-            x: coord.x,
-            y: coord.y,
-            isVisible: false
-        }));
-    } else {
-        // For left eye, mirror horizontally (flip X coordinate)
-        return FF120_RIGHT_EYE_COORDINATES.map((coord, index) => ({
-            id: index,
-            x: -coord.x,  // Mirror horizontally
-            y: coord.y,
-            isVisible: false
-        }));
-    }
+function getFF120Coordinates(eye = 'binocular') {
+    return ESTERMAN_COORDINATES.map((coord, index) => ({
+        id: index,
+        x: coord.x,
+        y: coord.y,
+        isVisible: false
+    }));
 }
+
+/**
+ * Example for FF120 with separate eye coordinates:
+ *
+ * const FF120_RIGHT_EYE_COORDINATES = [
+ *     {x: 0, y: 3}, {x: 2.6, y: 1.5}, ...  // Your FF120 right eye coordinates
+ * ];
+ *
+ * const FF120_LEFT_EYE_COORDINATES = [
+ *     {x: 0, y: 3}, {x: -2.6, y: 1.5}, ...  // Your FF120 left eye coordinates (mirrored)
+ * ];
+ *
+ * function getFF120Coordinates(eye = 'right') {
+ *     const coords = eye === 'right' ? FF120_RIGHT_EYE_COORDINATES : FF120_LEFT_EYE_COORDINATES;
+ *     return coords.map((coord, index) => ({
+ *         id: index,
+ *         x: coord.x,
+ *         y: coord.y,
+ *         isVisible: false
+ *     }));
+ * }
+ */

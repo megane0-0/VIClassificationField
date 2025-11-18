@@ -1,23 +1,18 @@
-# ゴールドマン視野検査 (FF120) 最大直径計算ツール
+# 両眼開放エスターマン視野検査 - 最大直径計算ツール
 
 視覚障害者スポーツのクラス分け判定支援Webアプリケーション
 
-![Version](https://img.shields.io/badge/version-1.1-blue)
+![Version](https://img.shields.io/badge/version-2.0-blue)
 ![License](https://img.shields.io/badge/license-MIT-green)
 
 ## 概要
 
-このツールは、ハンフリー視野検査のFull Field 120点パターン（FF120）の測定点をインタラクティブに入力し、固視点を通る視野の最大直径を自動計算するWebアプリケーションです。IBTA（International Blind Tennis Association）などの視覚障害者スポーツにおけるクラス分け判定を支援します。
+このツールは、両眼開放エスターマン視野検査（Binocular Esterman Visual Field Test）の120点パターンの測定点をインタラクティブに入力し、固視点を通る視野の最大直径を自動計算するWebアプリケーションです。IBTA（International Blind Tennis Association）などの視覚障害者スポーツにおけるクラス分け判定を支援します。
 
 ## 主要機能
 
-### 👁️ 測定眼選択機能
-- **右目/左目の切り替え**: 右目（OD）と左目（OS）を選択可能
-- **座標の自動調整**: 左目選択時は測定点の座標を水平反転
-- **標準パターン**: HFA3 Figure A-17に基づく標準的なFF120配置
-
 ### 📊 視野検査機能
-- **120点の測定点配置**: HFA3標準パターンに基づく放射状配置
+- **120点の測定点配置**: エスターマン標準パターンに基づく配置
 - **インタラクティブ入力**: クリックで測定点のオン/オフを切り替え
 - **リアルタイム計算**: 測定点の状態が変わるたびに自動で最大直径を再計算
 - **視覚的フィードバック**:
@@ -50,11 +45,10 @@
 
 ### 測定点配置
 
-FF120パターン（HFA3 Figure A-17準拠）:
-- **測定範囲**: 中心55度以内
-- **測定点数**: 120点（標準的な放射状配置）
-- **右目（OD）**: 右側が耳側、左側が鼻側
-- **左目（OS）**: 左側が耳側、右側が鼻側（右目から水平反転）
+両眼開放エスターマンパターン:
+- **測定範囲**: 中心±76度程度
+- **測定点数**: 120点
+- **検査方法**: 両眼開放（binocular）
 
 ### 計算アルゴリズム
 
@@ -80,40 +74,31 @@ FF120パターン（HFA3 Figure A-17準拠）:
 
 ### 基本操作
 
-1. **測定眼の選択**
-   - 「右目 (OD)」または「左目 (OS)」ボタンをクリックして測定眼を選択
-   - 左目選択時は測定点の配置が自動的に水平反転されます
-
-2. **測定点の入力**
+1. **測定点の入力**
    - 視野図上の点をクリックして見える/見えないを切り替え
    - 緑色 = 見える、グレー = 見えない
 
-3. **一括操作**
+2. **一括操作**
    - 「全選択」: すべての測定点をオンにする
    - 「全解除」: すべての測定点をオフにする
    - 「リセット」: 初期状態に戻す
 
-4. **結果の確認**
+3. **結果の確認**
    - 最大直径、方向、選択点数が自動的に表示されます
-   - 測定眼も結果パネルに表示されます
    - 境界点の詳細も確認できます
 
-5. **結果の保存**
-   - 「結果をコピー」: 測定眼情報を含むテキストをクリップボードにコピー
-   - 「画像として保存」: PNG形式で視野図を保存（ファイル名に測定眼を含む）
+4. **結果の保存**
+   - 「結果をコピー」: テキストをクリップボードにコピー
+   - 「画像として保存」: PNG形式で視野図を保存
 
 ### 操作例
 
 **例1: 全視野が見える場合**
 1. 「全選択」をクリック
-2. 最大直径: 約100度（検査範囲全体）
+2. 最大直径: 約140度以上（検査範囲全体）
 
-**例2: 右半分のみ見える場合**
-1. 0°, 30°, 60°, 90°, 300°, 330°方向の点を選択
-2. 最大直径が計算され、視野領域が表示される
-
-**例3: 中心のみ見える場合（求心性視野狭窄）**
-1. 各方向の内側の点のみ選択（例: 5度、10度の点のみ）
+**例2: 中心のみ見える場合（求心性視野狭窄）**
+1. 各方向の内側の点のみ選択
 2. 小さな最大直径が計算される
 
 ## ファイル構成
@@ -122,10 +107,114 @@ FF120パターン（HFA3 Figure A-17準拠）:
 .
 ├── index.html              # メインHTMLファイル
 ├── styles.css              # スタイルシート
-├── ff120-coordinates.js    # FF120座標データ（右目/左目）
+├── ff120-coordinates.js    # エスターマン座標データ
 ├── ff120-calculator.js     # JavaScript計算ロジック
 └── README.md              # このファイル
 ```
+
+## FF120座標データへの変更方法
+
+将来、ゴールドマンFF120の正確な座標データを入手した場合、以下の手順で変更できます：
+
+### 1. ff120-coordinates.js を編集
+
+ファイルの先頭にあるコメントを参考に、以下のように変更してください：
+
+```javascript
+// 右眼用の座標配列を定義
+const FF120_RIGHT_EYE_COORDINATES = [
+    {x: 0, y: 3}, {x: 2.6, y: 1.5}, // ... FF120の右眼座標データ
+];
+
+// 左眼用の座標配列を定義（右眼を水平反転、またはオリジナルデータ）
+const FF120_LEFT_EYE_COORDINATES = [
+    {x: 0, y: 3}, {x: -2.6, y: 1.5}, // ... FF120の左眼座標データ
+];
+
+// getFF120Coordinates関数を更新
+function getFF120Coordinates(eye = 'right') {
+    const coords = eye === 'right' ? FF120_RIGHT_EYE_COORDINATES : FF120_LEFT_EYE_COORDINATES;
+    return coords.map((coord, index) => ({
+        id: index,
+        x: coord.x,
+        y: coord.y,
+        isVisible: false
+    }));
+}
+```
+
+### 2. ff120-calculator.js を編集
+
+以下の変更を行ってください：
+
+```javascript
+// クラスのコンストラクタにcurrentEyeプロパティを追加
+constructor() {
+    this.currentEye = 'right'; // 'right' or 'left'
+    // ... 既存のコード
+}
+
+// init()メソッドでeyeパラメータを渡す
+init() {
+    this.points = getFF120Coordinates(this.currentEye);
+    // ... 既存のコード
+}
+
+// 右眼/左眼切り替えメソッドを追加
+switchEye(eye) {
+    if (eye === this.currentEye) return;
+    this.currentEye = eye;
+    this.points = getFF120Coordinates(eye);
+    this.calculatePointPolarCoordinates();
+    this.renderPoints();
+    this.updateResults();
+}
+
+// attachEventListeners()に右眼/左眼ボタンのリスナーを追加
+attachEventListeners() {
+    document.getElementById('rightEye').addEventListener('click', () => {
+        this.switchEye('right');
+    });
+    document.getElementById('leftEye').addEventListener('click', () => {
+        this.switchEye('left');
+    });
+    // ... 既存のコード
+}
+
+// getResultText()を更新
+getResultText() {
+    const eyeStr = this.currentEye === 'right' ? '右目 (OD)' : '左目 (OS)';
+    let text = `ゴールドマン視野検査 (FF120) 最大直径計算結果\n`;
+    text += `測定眼: ${eyeStr}\n`;
+    // ... 既存のコード
+}
+```
+
+### 3. index.html を編集
+
+右眼/左眼選択ボタンを追加：
+
+```html
+<div class="controls">
+    <div class="eye-selection">
+        <label class="eye-label">測定眼:</label>
+        <button id="rightEye" class="btn btn-eye active">右目 (OD)</button>
+        <button id="leftEye" class="btn btn-eye">左目 (OS)</button>
+    </div>
+    <!-- 既存のcontrol-buttons ... -->
+</div>
+
+<!-- 結果パネル内に測定眼表示を追加 -->
+<div class="result-item">
+    <span class="result-label">測定眼:</span>
+    <span id="eyeDisplay" class="result-value">右目 (OD)</span>
+</div>
+```
+
+### 4. タイトルと説明の更新
+
+- index.html の `<title>` と `<h1>` をFF120に変更
+- README.md の内容をFF120用に更新
 
 ## インストールと実行
 
@@ -188,8 +277,7 @@ npx http-server
 
 ## 参考資料
 
-- HFA3 Instructions for Use (Zeiss) - Figure A-17: Full Field 120 Test Pattern
-- Goldmann Perimetry 標準検査法
+- Esterman Visual Field Test 標準検査法
 - IBTA (International Blind Tennis Association) クラス分け規定
 - Turf.js Documentation: https://turfjs.org/
 
@@ -199,9 +287,9 @@ MIT License
 
 ## 作成情報
 
-- **バージョン**: 1.1
+- **バージョン**: 2.0
 - **作成日**: 2025年11月10日
-- **更新日**: 2025年11月10日（右目/左目選択機能追加）
+- **更新日**: 2025年11月18日（エスターマン座標に変更、クリック領域改善）
 - **用途**: IBTA視覚障害者スポーツクラス分け判定支援ツール
 
 ## 今後の拡張予定
@@ -210,7 +298,7 @@ MIT License
 - [ ] よく使うパターンのプリセット保存
 - [ ] 複数検査の比較機能
 - [ ] 印刷用レポート生成
-- [ ] 他のゴールドマン視野検査パターン対応（V4e、III4eなど）
+- [ ] 他の視野検査パターン対応（Goldmann FF120など）
 - [ ] アニメーション表示（境界線の変化）
 - [ ] 方向別選択機能
 

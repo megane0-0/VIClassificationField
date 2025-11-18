@@ -1,14 +1,13 @@
 /**
- * Goldmann Visual Field FF120 Maximum Diameter Calculator
+ * Binocular Esterman Visual Field Maximum Diameter Calculator
  * IBTA Visual Classification Field Support Tool
- * Version 1.1 - 2025-11-10
+ * Version 2.0 - 2025-11-18
  */
 
 class FF120Calculator {
     constructor() {
         this.points = [];
         this.result = null;
-        this.currentEye = 'right'; // 'right' or 'left'
         this.svg = document.getElementById('visualField');
         this.init();
     }
@@ -17,7 +16,7 @@ class FF120Calculator {
      * Initialize the calculator
      */
     init() {
-        this.points = getFF120Coordinates(this.currentEye);
+        this.points = getFF120Coordinates();
         this.calculatePointPolarCoordinates();
         this.renderRadialLines();
         this.renderPoints();
@@ -38,28 +37,6 @@ class FF120Calculator {
             if (angle < 0) angle += 360;
             point.direction = Math.round(angle);
         });
-    }
-
-    /**
-     * Switch between right and left eye
-     */
-    switchEye(eye) {
-        if (eye === this.currentEye) return;
-
-        this.currentEye = eye;
-        this.points = getFF120Coordinates(eye);
-        this.calculatePointPolarCoordinates();
-        this.renderPoints();
-        this.updateResults();
-        this.updateEyeDisplay();
-    }
-
-    /**
-     * Update eye display in results panel
-     */
-    updateEyeDisplay() {
-        const eyeDisplay = document.getElementById('eyeDisplay');
-        eyeDisplay.textContent = this.currentEye === 'right' ? '右目 (OD)' : '左目 (OS)';
     }
 
     /**
@@ -484,12 +461,10 @@ class FF120Calculator {
     getResultText() {
         const now = new Date();
         const dateStr = now.toLocaleString('ja-JP');
-        const eyeStr = this.currentEye === 'right' ? '右目 (OD)' : '左目 (OS)';
 
-        let text = `ゴールドマン視野検査 (FF120) 最大直径計算結果\n`;
+        let text = `両眼開放エスターマン視野検査 最大直径計算結果\n`;
         text += `========================================\n`;
-        text += `検査タイプ: FF120\n`;
-        text += `測定眼: ${eyeStr}\n`;
+        text += `検査タイプ: 両眼開放エスターマン (Binocular Esterman)\n`;
         text += `最大直径: ${this.result.maxDiameter.toFixed(1)}度\n`;
 
         if (this.result.angleDegrees !== 0) {
@@ -553,8 +528,7 @@ class FF120Calculator {
             canvas.toBlob(blob => {
                 const now = new Date();
                 const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
-                const eyeStr = this.currentEye === 'right' ? 'OD' : 'OS';
-                const filename = `goldmann_FF120_${eyeStr}_${timestamp}.png`;
+                const filename = `esterman_binocular_${timestamp}.png`;
 
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
@@ -587,19 +561,6 @@ class FF120Calculator {
      * Attach event listeners to UI controls
      */
     attachEventListeners() {
-        // Eye selection buttons
-        document.getElementById('rightEye').addEventListener('click', () => {
-            document.getElementById('rightEye').classList.add('active');
-            document.getElementById('leftEye').classList.remove('active');
-            this.switchEye('right');
-        });
-
-        document.getElementById('leftEye').addEventListener('click', () => {
-            document.getElementById('leftEye').classList.add('active');
-            document.getElementById('rightEye').classList.remove('active');
-            this.switchEye('left');
-        });
-
         // Control buttons
         document.getElementById('selectAll').addEventListener('click', () => this.selectAll());
         document.getElementById('clearAll').addEventListener('click', () => this.clearAll());
