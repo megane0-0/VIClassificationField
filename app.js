@@ -498,156 +498,183 @@ class HumphreyFieldCalculator {
                         // Special case: if all points are on one side, try to find major axis anyway
                         if (side1Points.length === 0 || side2Points.length === 0) {
                             // All intersection points are on the same side
-                            // Find the two furthest points and calculate visible lengths
+                            // We need to find two separate rays and calculate visible length for each
                             const allPoints = [...side1Points, ...side2Points];
-                            if (allPoints.length >= 2) {
-                                let max1 = 0, max2 = 0;
-                                let p1 = null, p2 = null;
 
-                                for (const p of allPoints) {
-                                    const coord = p.geometry.coordinates;
-                                    const dist = Math.sqrt(
-                                        Math.pow(coord[0] - fixationPoint[0], 2) +
-                                        Math.pow(coord[1] - fixationPoint[1], 2)
-                                    );
-                                    if (dist > max1) {
-                                        max2 = max1;
-                                        p2 = p1;
-                                        max1 = dist;
-                                        p1 = coord;
-                                    } else if (dist > max2) {
-                                        max2 = dist;
-                                        p2 = coord;
+                            // Sort all points by distance
+                            const sortedAll = allPoints.map(p => {
+                                const coord = p.geometry.coordinates;
+                                const dist = Math.sqrt(
+                                    Math.pow(coord[0] - fixationPoint[0], 2) +
+                                    Math.pow(coord[1] - fixationPoint[1], 2)
+                                );
+                                return { coord, dist };
+                            }).sort((a, b) => b.dist - a.dist); // furthest first
+
+                            if (sortedAll.length >= 2) {
+                                // Take the two furthest points as endpoints
+                                const p1 = sortedAll[0];
+                                const p2 = sortedAll[1];
+
+                                // For each endpoint, find all intersections along that ray and calculate visible length
+                                // Direction 1
+                                const dx1 = p1.coord[0] - fixationPoint[0];
+                                const dy1 = p1.coord[1] - fixationPoint[1];
+                                const pointsOnRay1 = sortedAll.filter(p => {
+                                    const dx = p.coord[0] - fixationPoint[0];
+                                    const dy = p.coord[1] - fixationPoint[1];
+                                    // Check if point is on the same ray (same direction)
+                                    const cross = dx * dy1 - dy * dx1;
+                                    const dot = dx * dx1 + dy * dy1;
+                                    return Math.abs(cross) < 0.01 && dot > 0;
+                                }).sort((a, b) => a.dist - b.dist);
+
+                                let visibleLength1 = 0;
+                                if (pointsOnRay1.length > 0) {
+                                    // Check first segment
+                                    const firstDist = pointsOnRay1[0].dist;
+                                    const midX = fixationPoint[0] + (pointsOnRay1[0].coord[0] - fixationPoint[0]) / 2;
+                                    const midY = fixationPoint[1] + (pointsOnRay1[0].coord[1] - fixationPoint[1]) / 2;
+                                    if (turf.booleanPointInPolygon(turf.point([midX, midY]), visibleRegion)) {
+                                        visibleLength1 += firstDist;
+                                    }
+                                    // Check segments between consecutive intersections
+                                    for (let i = 0; i < pointsOnRay1.length - 1; i++) {
+                                        const segLen = pointsOnRay1[i + 1].dist - pointsOnRay1[i].dist;
+                                        const segMidX = (pointsOnRay1[i].coord[0] + pointsOnRay1[i + 1].coord[0]) / 2;
+                                        const segMidY = (pointsOnRay1[i].coord[1] + pointsOnRay1[i + 1].coord[1]) / 2;
+                                        if (turf.booleanPointInPolygon(turf.point([segMidX, segMidY]), visibleRegion)) {
+                                            visibleLength1 += segLen;
+                                        }
                                     }
                                 }
 
-                                if (p1 && p2) {
-                                    // Calculate visible length for p1 direction
-                                    const numSamples1 = Math.max(50, Math.ceil(max1 / 0.1));
-                                    let visibleSamples1 = 0;
-                                    for (let i = 1; i <= numSamples1; i++) {
-                                        const t = i / numSamples1;
-                                        const sampleX = fixationPoint[0] * (1 - t) + p1[0] * t;
-                                        const sampleY = fixationPoint[1] * (1 - t) + p1[1] * t;
-                                        const samplePoint = turf.point([sampleX, sampleY]);
-                                        if (turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                            visibleSamples1++;
+                                // Direction 2
+                                const dx2 = p2.coord[0] - fixationPoint[0];
+                                const dy2 = p2.coord[1] - fixationPoint[1];
+                                const pointsOnRay2 = sortedAll.filter(p => {
+                                    const dx = p.coord[0] - fixationPoint[0];
+                                    const dy = p.coord[1] - fixationPoint[1];
+                                    const cross = dx * dy2 - dy * dx2;
+                                    const dot = dx * dx2 + dy * dy2;
+                                    return Math.abs(cross) < 0.01 && dot > 0;
+                                }).sort((a, b) => a.dist - b.dist);
+
+                                let visibleLength2 = 0;
+                                if (pointsOnRay2.length > 0) {
+                                    const firstDist = pointsOnRay2[0].dist;
+                                    const midX = fixationPoint[0] + (pointsOnRay2[0].coord[0] - fixationPoint[0]) / 2;
+                                    const midY = fixationPoint[1] + (pointsOnRay2[0].coord[1] - fixationPoint[1]) / 2;
+                                    if (turf.booleanPointInPolygon(turf.point([midX, midY]), visibleRegion)) {
+                                        visibleLength2 += firstDist;
+                                    }
+                                    for (let i = 0; i < pointsOnRay2.length - 1; i++) {
+                                        const segLen = pointsOnRay2[i + 1].dist - pointsOnRay2[i].dist;
+                                        const segMidX = (pointsOnRay2[i].coord[0] + pointsOnRay2[i + 1].coord[0]) / 2;
+                                        const segMidY = (pointsOnRay2[i].coord[1] + pointsOnRay2[i + 1].coord[1]) / 2;
+                                        if (turf.booleanPointInPolygon(turf.point([segMidX, segMidY]), visibleRegion)) {
+                                            visibleLength2 += segLen;
                                         }
                                     }
-                                    const visibleLength1 = (visibleSamples1 / numSamples1) * max1;
+                                }
 
-                                    // Calculate visible length for p2 direction
-                                    const numSamples2 = Math.max(50, Math.ceil(max2 / 0.1));
-                                    let visibleSamples2 = 0;
-                                    for (let i = 1; i <= numSamples2; i++) {
-                                        const t = i / numSamples2;
-                                        const sampleX = fixationPoint[0] * (1 - t) + p2[0] * t;
-                                        const sampleY = fixationPoint[1] * (1 - t) + p2[1] * t;
-                                        const samplePoint = turf.point([sampleX, sampleY]);
-                                        if (turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                            visibleSamples2++;
-                                        }
-                                    }
-                                    const visibleLength2 = (visibleSamples2 / numSamples2) * max2;
-
-                                    const totalDist = visibleLength1 + visibleLength2;
-
-                                    if (totalDist > maxDiameter) {
-                                        maxDiameter = totalDist;
-                                        maxAngle = angle;
-                                        maxEndpoint1 = {
-                                            x: p1[0],
-                                            y: p1[1]
-                                        };
-                                        maxEndpoint2 = {
-                                            x: p2[0],
-                                            y: p2[1]
-                                        };
-                                    }
+                                const totalDist = visibleLength1 + visibleLength2;
+                                if (totalDist > maxDiameter) {
+                                    maxDiameter = totalDist;
+                                    maxAngle = angle;
+                                    maxEndpoint1 = { x: p1.coord[0], y: p1.coord[1] };
+                                    maxEndpoint2 = { x: p2.coord[0], y: p2.coord[1] };
                                 }
                             }
                             continue; // Skip normal processing
                         }
 
-                        // MAJOR AXIS (長径) calculation with gap subtraction:
-                        // Find the furthest visible point in each direction
-                        // Calculate the total VISIBLE length (subtracting invisible gaps)
+                        // MAJOR AXIS (長径) with gap subtraction:
+                        // Calculate visible length by checking segments between intersection points
 
-                        // Find furthest point on side 1
-                        let maxDist1 = 0;
-                        let bestEndpoint1 = null;
-
-                        for (const p of side1Points) {
-                            const coord = p.geometry.coordinates;
-                            const dist = Math.sqrt(
-                                Math.pow(coord[0] - fixationPoint[0], 2) +
-                                Math.pow(coord[1] - fixationPoint[1], 2)
-                            );
-                            if (dist > maxDist1) {
-                                maxDist1 = dist;
-                                bestEndpoint1 = coord;
-                            }
-                        }
-
-                        // Find furthest point on side 2
-                        let maxDist2 = 0;
-                        let bestEndpoint2 = null;
-
-                        for (const p of side2Points) {
-                            const coord = p.geometry.coordinates;
-                            const dist = Math.sqrt(
-                                Math.pow(coord[0] - fixationPoint[0], 2) +
-                                Math.pow(coord[1] - fixationPoint[1], 2)
-                            );
-                            if (dist > maxDist2) {
-                                maxDist2 = dist;
-                                bestEndpoint2 = coord;
-                            }
-                        }
-
-                        // Calculate visible length for each direction (subtracting gaps)
+                        // Process side 1
                         let visibleLength1 = 0;
-                        if (bestEndpoint1) {
-                            // Sample along the line from fixation to furthest point
-                            const numSamples = Math.max(50, Math.ceil(maxDist1 / 0.1));
-                            let visibleSamples = 0;
+                        let bestEndpoint1 = null;
+                        if (side1Points.length > 0) {
+                            // Sort by distance from fixation
+                            const sortedPoints = side1Points.map(p => {
+                                const coord = p.geometry.coordinates;
+                                const dist = Math.sqrt(
+                                    Math.pow(coord[0] - fixationPoint[0], 2) +
+                                    Math.pow(coord[1] - fixationPoint[1], 2)
+                                );
+                                return { coord, dist };
+                            }).sort((a, b) => a.dist - b.dist);
 
-                            for (let i = 1; i <= numSamples; i++) {
-                                const t = i / numSamples;
-                                const sampleX = fixationPoint[0] * (1 - t) + bestEndpoint1[0] * t;
-                                const sampleY = fixationPoint[1] * (1 - t) + bestEndpoint1[1] * t;
-                                const samplePoint = turf.point([sampleX, sampleY]);
+                            bestEndpoint1 = sortedPoints[sortedPoints.length - 1].coord;
 
-                                if (turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                    visibleSamples++;
-                                }
+                            // Check segment from fixation to first intersection
+                            const firstDist = sortedPoints[0].dist;
+                            const midX = fixationPoint[0] + (sortedPoints[0].coord[0] - fixationPoint[0]) / 2;
+                            const midY = fixationPoint[1] + (sortedPoints[0].coord[1] - fixationPoint[1]) / 2;
+                            const midPoint = turf.point([midX, midY]);
+
+                            if (turf.booleanPointInPolygon(midPoint, visibleRegion)) {
+                                visibleLength1 += firstDist;
                             }
 
-                            // Visible length = (visible samples / total samples) * total distance
-                            visibleLength1 = (visibleSamples / numSamples) * maxDist1;
+                            // Check segments between consecutive intersections
+                            for (let i = 0; i < sortedPoints.length - 1; i++) {
+                                const point1 = sortedPoints[i];
+                                const point2 = sortedPoints[i + 1];
+                                const segmentLength = point2.dist - point1.dist;
+
+                                const segMidX = (point1.coord[0] + point2.coord[0]) / 2;
+                                const segMidY = (point1.coord[1] + point2.coord[1]) / 2;
+                                const segMidPoint = turf.point([segMidX, segMidY]);
+
+                                if (turf.booleanPointInPolygon(segMidPoint, visibleRegion)) {
+                                    visibleLength1 += segmentLength;
+                                }
+                            }
                         }
 
+                        // Process side 2
                         let visibleLength2 = 0;
-                        if (bestEndpoint2) {
-                            const numSamples = Math.max(50, Math.ceil(maxDist2 / 0.1));
-                            let visibleSamples = 0;
+                        let bestEndpoint2 = null;
+                        if (side2Points.length > 0) {
+                            const sortedPoints = side2Points.map(p => {
+                                const coord = p.geometry.coordinates;
+                                const dist = Math.sqrt(
+                                    Math.pow(coord[0] - fixationPoint[0], 2) +
+                                    Math.pow(coord[1] - fixationPoint[1], 2)
+                                );
+                                return { coord, dist };
+                            }).sort((a, b) => a.dist - b.dist);
 
-                            for (let i = 1; i <= numSamples; i++) {
-                                const t = i / numSamples;
-                                const sampleX = fixationPoint[0] * (1 - t) + bestEndpoint2[0] * t;
-                                const sampleY = fixationPoint[1] * (1 - t) + bestEndpoint2[1] * t;
-                                const samplePoint = turf.point([sampleX, sampleY]);
+                            bestEndpoint2 = sortedPoints[sortedPoints.length - 1].coord;
 
-                                if (turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                    visibleSamples++;
-                                }
+                            const firstDist = sortedPoints[0].dist;
+                            const midX = fixationPoint[0] + (sortedPoints[0].coord[0] - fixationPoint[0]) / 2;
+                            const midY = fixationPoint[1] + (sortedPoints[0].coord[1] - fixationPoint[1]) / 2;
+                            const midPoint = turf.point([midX, midY]);
+
+                            if (turf.booleanPointInPolygon(midPoint, visibleRegion)) {
+                                visibleLength2 += firstDist;
                             }
 
-                            visibleLength2 = (visibleSamples / numSamples) * maxDist2;
+                            for (let i = 0; i < sortedPoints.length - 1; i++) {
+                                const point1 = sortedPoints[i];
+                                const point2 = sortedPoints[i + 1];
+                                const segmentLength = point2.dist - point1.dist;
+
+                                const segMidX = (point1.coord[0] + point2.coord[0]) / 2;
+                                const segMidY = (point1.coord[1] + point2.coord[1]) / 2;
+                                const segMidPoint = turf.point([segMidX, segMidY]);
+
+                                if (turf.booleanPointInPolygon(segMidPoint, visibleRegion)) {
+                                    visibleLength2 += segmentLength;
+                                }
+                            }
                         }
 
-                        // Calculate total major axis length (sum of visible lengths)
-                        if (bestEndpoint1 && bestEndpoint2) {
+                        // Calculate total major axis
+                        if (visibleLength1 > 0 && visibleLength2 > 0) {
                             const totalDist = visibleLength1 + visibleLength2;
 
                             if (totalDist > maxDiameter) {
@@ -661,7 +688,7 @@ class HumphreyFieldCalculator {
                                     x: bestEndpoint2[0],
                                     y: bestEndpoint2[1]
                                 };
-                                console.log(`New max at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (${visibleLength1.toFixed(2)}+${visibleLength2.toFixed(2)}, gaps subtracted)`);
+                                console.log(`New max at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (${visibleLength1.toFixed(2)}+${visibleLength2.toFixed(2)})`);
                             }
                         }
                     }
