@@ -522,29 +522,47 @@ class HumphreyFieldCalculator {
                                 }
 
                                 if (p1 && p2) {
-                                    // Check if the line segment between p1 and p2 is inside the visible region
-                                    // Sample multiple points along the line for accuracy
-                                    const lineDistance = Math.sqrt(
-                                        Math.pow(p2.geometry.coordinates[0] - p1.geometry.coordinates[0], 2) +
-                                        Math.pow(p2.geometry.coordinates[1] - p1.geometry.coordinates[1], 2)
+                                    // Check rays from fixation point to p1 and p2 separately
+                                    const dist1 = Math.sqrt(
+                                        Math.pow(p1.geometry.coordinates[0] - fixationPoint[0], 2) +
+                                        Math.pow(p1.geometry.coordinates[1] - fixationPoint[1], 2)
                                     );
-                                    const numSamples = Math.max(20, Math.ceil(lineDistance / 0.25));
-                                    let allSamplesInside = true;
+                                    const numSamples1 = Math.max(20, Math.ceil(dist1 / 0.25));
+                                    let ray1Inside = true;
 
-                                    for (let i = 0; i <= numSamples; i++) {
-                                        const t = i / numSamples;
-                                        const sampleX = p1.geometry.coordinates[0] * (1 - t) + p2.geometry.coordinates[0] * t;
-                                        const sampleY = p1.geometry.coordinates[1] * (1 - t) + p2.geometry.coordinates[1] * t;
+                                    for (let i = 1; i <= numSamples1; i++) {
+                                        const t = i / numSamples1;
+                                        const sampleX = fixationPoint[0] * (1 - t) + p1.geometry.coordinates[0] * t;
+                                        const sampleY = fixationPoint[1] * (1 - t) + p1.geometry.coordinates[1] * t;
                                         const samplePoint = turf.point([sampleX, sampleY]);
 
                                         if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                            allSamplesInside = false;
+                                            ray1Inside = false;
                                             break;
                                         }
                                     }
 
-                                    // Check if all samples are inside visible region
-                                    if (allSamplesInside) {
+                                    const dist2 = Math.sqrt(
+                                        Math.pow(p2.geometry.coordinates[0] - fixationPoint[0], 2) +
+                                        Math.pow(p2.geometry.coordinates[1] - fixationPoint[1], 2)
+                                    );
+                                    const numSamples2 = Math.max(20, Math.ceil(dist2 / 0.25));
+                                    let ray2Inside = true;
+
+                                    for (let i = 1; i <= numSamples2; i++) {
+                                        const t = i / numSamples2;
+                                        const sampleX = fixationPoint[0] * (1 - t) + p2.geometry.coordinates[0] * t;
+                                        const sampleY = fixationPoint[1] * (1 - t) + p2.geometry.coordinates[1] * t;
+                                        const samplePoint = turf.point([sampleX, sampleY]);
+
+                                        if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
+                                            ray2Inside = false;
+                                            break;
+                                        }
+                                    }
+
+                                    // Check if both rays are inside visible region
+                                    if (ray1Inside && ray2Inside) {
                                         const totalDist = turf.distance(
                                             turf.point(p1.geometry.coordinates),
                                             turf.point(p2.geometry.coordinates),
@@ -596,31 +614,53 @@ class HumphreyFieldCalculator {
 
                         // Calculate total diameter
                         if (bestPoint1 && bestPoint2) {
-                            // Check if the line segment passes through the visible region
-                            // Sample points along the line (use more samples for better accuracy)
-                            // Number of samples should be proportional to the distance
-                            const lineDistance = Math.sqrt(
-                                Math.pow(bestPoint2.geometry.coordinates[0] - bestPoint1.geometry.coordinates[0], 2) +
-                                Math.pow(bestPoint2.geometry.coordinates[1] - bestPoint1.geometry.coordinates[1], 2)
-                            );
-                            // Sample at least every 0.25 degrees along the line
-                            const numSamples = Math.max(20, Math.ceil(lineDistance / 0.25));
-                            let allSamplesInside = true;
+                            // IMPORTANT: Check the two rays separately, not the line between them
+                            // Ray 1: from fixation point to bestPoint1
+                            // Ray 2: from fixation point to bestPoint2
+                            // This is crucial for non-convex visible regions
 
-                            for (let i = 0; i <= numSamples; i++) {
-                                const t = i / numSamples;
-                                const sampleX = bestPoint1.geometry.coordinates[0] * (1 - t) + bestPoint2.geometry.coordinates[0] * t;
-                                const sampleY = bestPoint1.geometry.coordinates[1] * (1 - t) + bestPoint2.geometry.coordinates[1] * t;
+                            // Check ray from fixation to bestPoint1
+                            const dist1 = Math.sqrt(
+                                Math.pow(bestPoint1.geometry.coordinates[0] - fixationPoint[0], 2) +
+                                Math.pow(bestPoint1.geometry.coordinates[1] - fixationPoint[1], 2)
+                            );
+                            const numSamples1 = Math.max(20, Math.ceil(dist1 / 0.25));
+                            let ray1Inside = true;
+
+                            for (let i = 1; i <= numSamples1; i++) {
+                                const t = i / numSamples1;
+                                const sampleX = fixationPoint[0] * (1 - t) + bestPoint1.geometry.coordinates[0] * t;
+                                const sampleY = fixationPoint[1] * (1 - t) + bestPoint1.geometry.coordinates[1] * t;
                                 const samplePoint = turf.point([sampleX, sampleY]);
 
                                 if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                    allSamplesInside = false;
+                                    ray1Inside = false;
                                     break;
                                 }
                             }
 
-                            // Only use this diameter if the entire line is inside the visible region
-                            if (allSamplesInside) {
+                            // Check ray from fixation to bestPoint2
+                            const dist2 = Math.sqrt(
+                                Math.pow(bestPoint2.geometry.coordinates[0] - fixationPoint[0], 2) +
+                                Math.pow(bestPoint2.geometry.coordinates[1] - fixationPoint[1], 2)
+                            );
+                            const numSamples2 = Math.max(20, Math.ceil(dist2 / 0.25));
+                            let ray2Inside = true;
+
+                            for (let i = 1; i <= numSamples2; i++) {
+                                const t = i / numSamples2;
+                                const sampleX = fixationPoint[0] * (1 - t) + bestPoint2.geometry.coordinates[0] * t;
+                                const sampleY = fixationPoint[1] * (1 - t) + bestPoint2.geometry.coordinates[1] * t;
+                                const samplePoint = turf.point([sampleX, sampleY]);
+
+                                if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
+                                    ray2Inside = false;
+                                    break;
+                                }
+                            }
+
+                            // Only use this diameter if BOTH rays are inside the visible region
+                            if (ray1Inside && ray2Inside) {
                                 const totalDist = maxDistToFix1 + maxDistToFix2;
 
                                 if (totalDist > maxDiameter) {
@@ -641,7 +681,7 @@ class HumphreyFieldCalculator {
                                 // Log when a potentially good diameter is rejected
                                 const totalDist = maxDistToFix1 + maxDistToFix2;
                                 if (totalDist > maxDiameter * 0.9 && totalDist > 5) {
-                                    console.log(`Rejected at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (line exits visible region)`);
+                                    console.log(`Rejected at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (ray exits visible region)`);
                                 }
                             }
                         }
