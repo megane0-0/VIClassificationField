@@ -387,13 +387,22 @@ class HumphreyFieldCalculator {
             let visibleRegion = squares[0];
             for (let i = 1; i < squares.length; i++) {
                 try {
-                    // Turf v7 requires exactly 2 features as separate arguments
-                    const unionResult = turf.union(visibleRegion, squares[i]);
+                    // Check if both geometries are valid
+                    if (!visibleRegion || !squares[i]) {
+                        console.warn(`Invalid geometry at index ${i}`);
+                        continue;
+                    }
+
+                    // Use turf.union with Feature Collection
+                    const fc = turf.featureCollection([visibleRegion, squares[i]]);
+                    const unionResult = turf.union(fc);
+
                     if (unionResult) {
                         visibleRegion = unionResult;
                     }
                 } catch (e) {
                     console.warn(`Union failed at index ${i}, continuing...`, e);
+                    // If union fails, try to continue with current region
                 }
             }
             console.log('Visible region created:', visibleRegion);
@@ -424,29 +433,6 @@ class HumphreyFieldCalculator {
                 };
             }
 
-            // Convert polygon to line for intersection
-            let visibleBoundary;
-            try {
-                if (visibleRegion.geometry.type === 'MultiPolygon') {
-                    console.log('Handling MultiPolygon');
-                    // For MultiPolygon, convert each polygon to a line and merge
-                    const lines = [];
-                    for (const polygonCoords of visibleRegion.geometry.coordinates) {
-                        const poly = turf.polygon(polygonCoords);
-                        const line = turf.polygonToLine(poly);
-                        lines.push(line);
-                    }
-                    // Use the first polygon's boundary for now
-                    visibleBoundary = lines[0];
-                } else {
-                    visibleBoundary = turf.polygonToLine(visibleRegion);
-                }
-                console.log('Visible boundary:', visibleBoundary);
-            } catch (e) {
-                console.error('Failed to convert polygon to line:', e);
-                throw e;
-            }
-
             // Test lines at different angles
             for (let angle = 0; angle < 180; angle += 0.5) {
                 const radians = (angle * Math.PI) / 180;
@@ -463,8 +449,8 @@ class HumphreyFieldCalculator {
                 const line = turf.lineString([[x1, y1], [x2, y2]]);
 
                 try {
-                    // Find intersection points with visible region boundary
-                    const intersections = turf.lineIntersect(line, visibleBoundary);
+                    // Find intersection points with visible region (polygon directly)
+                    const intersections = turf.lineIntersect(line, visibleRegion);
 
                     // Log first angle for debugging
                     if (angle === 0) {
@@ -496,6 +482,11 @@ class HumphreyFieldCalculator {
                             } else {
                                 side2Points.push(feature);
                             }
+                        }
+
+                        // Debug log for first angle
+                        if (angle === 0) {
+                            console.log(`Side1 points: ${side1Points.length}, Side2 points: ${side2Points.length}`);
                         }
 
                         // Find furthest point on each side (using Euclidean distance)
