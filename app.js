@@ -498,7 +498,7 @@ class HumphreyFieldCalculator {
                         // Special case: if all points are on one side, try to find major axis anyway
                         if (side1Points.length === 0 || side2Points.length === 0) {
                             // All intersection points are on the same side
-                            // Find the two furthest points (for major axis, gaps don't matter)
+                            // Find the two furthest points and calculate visible lengths
                             const allPoints = [...side1Points, ...side2Points];
                             if (allPoints.length >= 2) {
                                 let max1 = 0, max2 = 0;
@@ -522,7 +522,35 @@ class HumphreyFieldCalculator {
                                 }
 
                                 if (p1 && p2) {
-                                    const totalDist = max1 + max2;
+                                    // Calculate visible length for p1 direction
+                                    const numSamples1 = Math.max(50, Math.ceil(max1 / 0.1));
+                                    let visibleSamples1 = 0;
+                                    for (let i = 1; i <= numSamples1; i++) {
+                                        const t = i / numSamples1;
+                                        const sampleX = fixationPoint[0] * (1 - t) + p1[0] * t;
+                                        const sampleY = fixationPoint[1] * (1 - t) + p1[1] * t;
+                                        const samplePoint = turf.point([sampleX, sampleY]);
+                                        if (turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
+                                            visibleSamples1++;
+                                        }
+                                    }
+                                    const visibleLength1 = (visibleSamples1 / numSamples1) * max1;
+
+                                    // Calculate visible length for p2 direction
+                                    const numSamples2 = Math.max(50, Math.ceil(max2 / 0.1));
+                                    let visibleSamples2 = 0;
+                                    for (let i = 1; i <= numSamples2; i++) {
+                                        const t = i / numSamples2;
+                                        const sampleX = fixationPoint[0] * (1 - t) + p2[0] * t;
+                                        const sampleY = fixationPoint[1] * (1 - t) + p2[1] * t;
+                                        const samplePoint = turf.point([sampleX, sampleY]);
+                                        if (turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
+                                            visibleSamples2++;
+                                        }
+                                    }
+                                    const visibleLength2 = (visibleSamples2 / numSamples2) * max2;
+
+                                    const totalDist = visibleLength1 + visibleLength2;
 
                                     if (totalDist > maxDiameter) {
                                         maxDiameter = totalDist;
@@ -541,11 +569,11 @@ class HumphreyFieldCalculator {
                             continue; // Skip normal processing
                         }
 
-                        // MAJOR AXIS (長径) calculation:
-                        // Find the furthest visible point in each direction, regardless of gaps.
-                        // This is NOT diameter (which requires continuous path), but major axis.
+                        // MAJOR AXIS (長径) calculation with gap subtraction:
+                        // Find the furthest visible point in each direction
+                        // Calculate the total VISIBLE length (subtracting invisible gaps)
 
-                        // Find furthest point on side 1 (simply the maximum distance)
+                        // Find furthest point on side 1
                         let maxDist1 = 0;
                         let bestEndpoint1 = null;
 
@@ -577,9 +605,50 @@ class HumphreyFieldCalculator {
                             }
                         }
 
-                        // Calculate total major axis length
+                        // Calculate visible length for each direction (subtracting gaps)
+                        let visibleLength1 = 0;
+                        if (bestEndpoint1) {
+                            // Sample along the line from fixation to furthest point
+                            const numSamples = Math.max(50, Math.ceil(maxDist1 / 0.1));
+                            let visibleSamples = 0;
+
+                            for (let i = 1; i <= numSamples; i++) {
+                                const t = i / numSamples;
+                                const sampleX = fixationPoint[0] * (1 - t) + bestEndpoint1[0] * t;
+                                const sampleY = fixationPoint[1] * (1 - t) + bestEndpoint1[1] * t;
+                                const samplePoint = turf.point([sampleX, sampleY]);
+
+                                if (turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
+                                    visibleSamples++;
+                                }
+                            }
+
+                            // Visible length = (visible samples / total samples) * total distance
+                            visibleLength1 = (visibleSamples / numSamples) * maxDist1;
+                        }
+
+                        let visibleLength2 = 0;
+                        if (bestEndpoint2) {
+                            const numSamples = Math.max(50, Math.ceil(maxDist2 / 0.1));
+                            let visibleSamples = 0;
+
+                            for (let i = 1; i <= numSamples; i++) {
+                                const t = i / numSamples;
+                                const sampleX = fixationPoint[0] * (1 - t) + bestEndpoint2[0] * t;
+                                const sampleY = fixationPoint[1] * (1 - t) + bestEndpoint2[1] * t;
+                                const samplePoint = turf.point([sampleX, sampleY]);
+
+                                if (turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
+                                    visibleSamples++;
+                                }
+                            }
+
+                            visibleLength2 = (visibleSamples / numSamples) * maxDist2;
+                        }
+
+                        // Calculate total major axis length (sum of visible lengths)
                         if (bestEndpoint1 && bestEndpoint2) {
-                            const totalDist = maxDist1 + maxDist2;
+                            const totalDist = visibleLength1 + visibleLength2;
 
                             if (totalDist > maxDiameter) {
                                 maxDiameter = totalDist;
@@ -592,7 +661,7 @@ class HumphreyFieldCalculator {
                                     x: bestEndpoint2[0],
                                     y: bestEndpoint2[1]
                                 };
-                                console.log(`New max at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (${maxDist1.toFixed(2)}+${maxDist2.toFixed(2)})`);
+                                console.log(`New max at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (${visibleLength1.toFixed(2)}+${visibleLength2.toFixed(2)}, gaps subtracted)`);
                             }
                         }
                     }
