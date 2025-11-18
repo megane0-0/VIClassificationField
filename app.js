@@ -387,9 +387,13 @@ class HumphreyFieldCalculator {
             let visibleRegion = squares[0];
             for (let i = 1; i < squares.length; i++) {
                 try {
-                    visibleRegion = turf.union(visibleRegion, squares[i]);
+                    // Turf v7 requires exactly 2 features as separate arguments
+                    const unionResult = turf.union(visibleRegion, squares[i]);
+                    if (unionResult) {
+                        visibleRegion = unionResult;
+                    }
                 } catch (e) {
-                    console.warn('Union failed, continuing...', e);
+                    console.warn(`Union failed at index ${i}, continuing...`, e);
                 }
             }
             console.log('Visible region created:', visibleRegion);
@@ -420,6 +424,29 @@ class HumphreyFieldCalculator {
                 };
             }
 
+            // Convert polygon to line for intersection
+            let visibleBoundary;
+            try {
+                if (visibleRegion.geometry.type === 'MultiPolygon') {
+                    console.log('Handling MultiPolygon');
+                    // For MultiPolygon, convert each polygon to a line and merge
+                    const lines = [];
+                    for (const polygonCoords of visibleRegion.geometry.coordinates) {
+                        const poly = turf.polygon(polygonCoords);
+                        const line = turf.polygonToLine(poly);
+                        lines.push(line);
+                    }
+                    // Use the first polygon's boundary for now
+                    visibleBoundary = lines[0];
+                } else {
+                    visibleBoundary = turf.polygonToLine(visibleRegion);
+                }
+                console.log('Visible boundary:', visibleBoundary);
+            } catch (e) {
+                console.error('Failed to convert polygon to line:', e);
+                throw e;
+            }
+
             // Test lines at different angles
             for (let angle = 0; angle < 180; angle += 0.5) {
                 const radians = (angle * Math.PI) / 180;
@@ -437,7 +464,12 @@ class HumphreyFieldCalculator {
 
                 try {
                     // Find intersection points with visible region boundary
-                    const intersections = turf.lineIntersect(line, visibleRegion);
+                    const intersections = turf.lineIntersect(line, visibleBoundary);
+
+                    // Log first angle for debugging
+                    if (angle === 0) {
+                        console.log(`Angle ${angle}: found ${intersections.features.length} intersections`);
+                    }
 
                     if (intersections.features.length >= 2) {
                         // Calculate diameter through fixation point
@@ -506,6 +538,10 @@ class HumphreyFieldCalculator {
                                     x: bestPoint2.geometry.coordinates[0],
                                     y: bestPoint2.geometry.coordinates[1]
                                 };
+                                // Log when we find a new max
+                                if (angle % 45 === 0 || maxDiameter < 5) {
+                                    console.log(`New max at angle ${angle}: ${totalDist.toFixed(2)}`);
+                                }
                             }
                         }
                     }
