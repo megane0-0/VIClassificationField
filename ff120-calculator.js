@@ -351,7 +351,16 @@ class FF120Calculator {
         let maxSegments = [];
 
         // Test lines through fixation point at 0.5-degree increments
+        // Exclude 0°, 90°, 180°, 270° (hemianopia boundary lines: horizontal and vertical)
         for (let angle = 0; angle < 180; angle += 0.5) {
+            // Skip boundary lines (horizontal: 0°/180°, vertical: 90°/270°)
+            const isHorizontal = Math.abs(angle - 0) < 0.01 || Math.abs(angle - 180) < 0.01;
+            const isVertical = Math.abs(angle - 90) < 0.01;
+
+            if (isHorizontal || isVertical) {
+                continue;
+            }
+
             const visibleLength = this.calculateVisibleLength(angle);
 
             if (visibleLength > maxDiameter) {
