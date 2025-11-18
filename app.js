@@ -498,85 +498,58 @@ class HumphreyFieldCalculator {
                         // Special case: if all points are on one side, try to find diameter anyway
                         if (side1Points.length === 0 || side2Points.length === 0) {
                             // All intersection points are on the same side
-                            // Find the two furthest points from fixation
+                            // Sort all points by distance and find the two furthest reachable points
                             const allPoints = [...side1Points, ...side2Points];
                             if (allPoints.length >= 2) {
-                                let max1 = 0, max2 = 0;
-                                let p1 = null, p2 = null;
-
-                                for (const p of allPoints) {
+                                // Sort by distance from fixation (furthest first)
+                                const sortedPoints = allPoints.map(p => {
                                     const coord = p.geometry.coordinates;
                                     const dist = Math.sqrt(
                                         Math.pow(coord[0] - fixationPoint[0], 2) +
                                         Math.pow(coord[1] - fixationPoint[1], 2)
                                     );
-                                    if (dist > max1) {
-                                        max2 = max1;
-                                        p2 = p1;
-                                        max1 = dist;
-                                        p1 = p;
-                                    } else if (dist > max2) {
-                                        max2 = dist;
-                                        p2 = p;
+                                    return { point: p, dist: dist };
+                                }).sort((a, b) => b.dist - a.dist);
+
+                                // Try to find two reachable points
+                                const reachablePoints = [];
+                                for (const {point, dist} of sortedPoints) {
+                                    const numSamples = Math.max(20, Math.ceil(dist / 0.25));
+                                    let isReachable = true;
+
+                                    for (let i = 1; i <= numSamples; i++) {
+                                        const t = i / numSamples;
+                                        const sampleX = fixationPoint[0] * (1 - t) + point.geometry.coordinates[0] * t;
+                                        const sampleY = fixationPoint[1] * (1 - t) + point.geometry.coordinates[1] * t;
+                                        const samplePoint = turf.point([sampleX, sampleY]);
+
+                                        if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
+                                            isReachable = false;
+                                            break;
+                                        }
+                                    }
+
+                                    if (isReachable) {
+                                        reachablePoints.push({ point: point.geometry.coordinates, dist: dist });
+                                        if (reachablePoints.length >= 2) {
+                                            break; // Found two reachable points
+                                        }
                                     }
                                 }
 
-                                if (p1 && p2) {
-                                    // Find maximum continuous distance along each ray
-                                    const dist1 = Math.sqrt(
-                                        Math.pow(p1.geometry.coordinates[0] - fixationPoint[0], 2) +
-                                        Math.pow(p1.geometry.coordinates[1] - fixationPoint[1], 2)
-                                    );
-                                    let maxContinuousDist1 = dist1;
-                                    const numSamples1 = Math.max(20, Math.ceil(dist1 / 0.25));
+                                if (reachablePoints.length >= 2) {
+                                    const totalDist = reachablePoints[0].dist + reachablePoints[1].dist;
 
-                                    for (let i = 1; i <= numSamples1; i++) {
-                                        const t = i / numSamples1;
-                                        const sampleX = fixationPoint[0] * (1 - t) + p1.geometry.coordinates[0] * t;
-                                        const sampleY = fixationPoint[1] * (1 - t) + p1.geometry.coordinates[1] * t;
-                                        const samplePoint = turf.point([sampleX, sampleY]);
-
-                                        if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                            const prevT = Math.max(0, (i - 1) / numSamples1);
-                                            maxContinuousDist1 = dist1 * prevT;
-                                            break;
-                                        }
-                                    }
-
-                                    const dist2 = Math.sqrt(
-                                        Math.pow(p2.geometry.coordinates[0] - fixationPoint[0], 2) +
-                                        Math.pow(p2.geometry.coordinates[1] - fixationPoint[1], 2)
-                                    );
-                                    let maxContinuousDist2 = dist2;
-                                    const numSamples2 = Math.max(20, Math.ceil(dist2 / 0.25));
-
-                                    for (let i = 1; i <= numSamples2; i++) {
-                                        const t = i / numSamples2;
-                                        const sampleX = fixationPoint[0] * (1 - t) + p2.geometry.coordinates[0] * t;
-                                        const sampleY = fixationPoint[1] * (1 - t) + p2.geometry.coordinates[1] * t;
-                                        const samplePoint = turf.point([sampleX, sampleY]);
-
-                                        if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                            const prevT = Math.max(0, (i - 1) / numSamples2);
-                                            maxContinuousDist2 = dist2 * prevT;
-                                            break;
-                                        }
-                                    }
-
-                                    const totalDist = maxContinuousDist1 + maxContinuousDist2;
-
-                                    if (maxContinuousDist1 > 0 && maxContinuousDist2 > 0 && totalDist > maxDiameter) {
+                                    if (totalDist > maxDiameter) {
                                         maxDiameter = totalDist;
                                         maxAngle = angle;
-                                        const t1 = maxContinuousDist1 / dist1;
-                                        const t2 = maxContinuousDist2 / dist2;
                                         maxEndpoint1 = {
-                                            x: fixationPoint[0] + (p1.geometry.coordinates[0] - fixationPoint[0]) * t1,
-                                            y: fixationPoint[1] + (p1.geometry.coordinates[1] - fixationPoint[1]) * t1
+                                            x: reachablePoints[0].point[0],
+                                            y: reachablePoints[0].point[1]
                                         };
                                         maxEndpoint2 = {
-                                            x: fixationPoint[0] + (p2.geometry.coordinates[0] - fixationPoint[0]) * t2,
-                                            y: fixationPoint[1] + (p2.geometry.coordinates[1] - fixationPoint[1]) * t2
+                                            x: reachablePoints[1].point[0],
+                                            y: reachablePoints[1].point[1]
                                         };
                                     }
                                 }
@@ -584,93 +557,98 @@ class HumphreyFieldCalculator {
                             continue; // Skip normal processing
                         }
 
-                        // Find furthest point on each side (using Euclidean distance)
-                        for (const p of side1Points) {
+                        // Sort points by distance from fixation (furthest first)
+                        // We'll try each point from furthest to nearest to find the furthest
+                        // point that has a continuous visible path from the fixation point
+                        const side1Sorted = side1Points.map(p => {
                             const coord = p.geometry.coordinates;
                             const dist = Math.sqrt(
                                 Math.pow(coord[0] - fixationPoint[0], 2) +
                                 Math.pow(coord[1] - fixationPoint[1], 2)
                             );
-                            if (dist > maxDistToFix1) {
-                                maxDistToFix1 = dist;
-                                bestPoint1 = p;
-                            }
-                        }
+                            return { point: p, dist: dist };
+                        }).sort((a, b) => b.dist - a.dist); // Sort by distance, furthest first
 
-                        for (const p of side2Points) {
+                        const side2Sorted = side2Points.map(p => {
                             const coord = p.geometry.coordinates;
                             const dist = Math.sqrt(
                                 Math.pow(coord[0] - fixationPoint[0], 2) +
                                 Math.pow(coord[1] - fixationPoint[1], 2)
                             );
-                            if (dist > maxDistToFix2) {
-                                maxDistToFix2 = dist;
-                                bestPoint2 = p;
+                            return { point: p, dist: dist };
+                        }).sort((a, b) => b.dist - a.dist);
+
+                        // Find the furthest reachable point on side 1
+                        let maxReachableDist1 = 0;
+                        let bestEndpoint1 = null;
+
+                        for (const {point, dist} of side1Sorted) {
+                            // Check if this point is reachable via a continuous visible path
+                            const numSamples = Math.max(20, Math.ceil(dist / 0.25));
+                            let isReachable = true;
+
+                            for (let i = 1; i <= numSamples; i++) {
+                                const t = i / numSamples;
+                                const sampleX = fixationPoint[0] * (1 - t) + point.geometry.coordinates[0] * t;
+                                const sampleY = fixationPoint[1] * (1 - t) + point.geometry.coordinates[1] * t;
+                                const samplePoint = turf.point([sampleX, sampleY]);
+
+                                if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
+                                    isReachable = false;
+                                    break;
+                                }
+                            }
+
+                            if (isReachable) {
+                                maxReachableDist1 = dist;
+                                bestEndpoint1 = point.geometry.coordinates;
+                                break; // Found the furthest reachable point
                             }
                         }
 
-                        // Calculate total diameter
-                        if (bestPoint1 && bestPoint2) {
-                            // IMPORTANT: Find the maximum CONTINUOUS distance from fixation point
-                            // along each ray. If a ray exits the visible region, only count up to
-                            // where it exits.
+                        // Find the furthest reachable point on side 2
+                        let maxReachableDist2 = 0;
+                        let bestEndpoint2 = null;
 
-                            // Check ray from fixation to bestPoint1
-                            // Find the furthest continuous point along this ray
-                            let maxContinuousDist1 = maxDistToFix1; // Start with full distance
-                            const numSamples1 = Math.max(20, Math.ceil(maxDistToFix1 / 0.25));
+                        for (const {point, dist} of side2Sorted) {
+                            const numSamples = Math.max(20, Math.ceil(dist / 0.25));
+                            let isReachable = true;
 
-                            for (let i = 1; i <= numSamples1; i++) {
-                                const t = i / numSamples1;
-                                const sampleX = fixationPoint[0] * (1 - t) + bestPoint1.geometry.coordinates[0] * t;
-                                const sampleY = fixationPoint[1] * (1 - t) + bestPoint1.geometry.coordinates[1] * t;
+                            for (let i = 1; i <= numSamples; i++) {
+                                const t = i / numSamples;
+                                const sampleX = fixationPoint[0] * (1 - t) + point.geometry.coordinates[0] * t;
+                                const sampleY = fixationPoint[1] * (1 - t) + point.geometry.coordinates[1] * t;
                                 const samplePoint = turf.point([sampleX, sampleY]);
 
                                 if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                    // Found an exit point - use the previous sample distance
-                                    const prevT = Math.max(0, (i - 1) / numSamples1);
-                                    maxContinuousDist1 = maxDistToFix1 * prevT;
+                                    isReachable = false;
                                     break;
                                 }
                             }
 
-                            // Check ray from fixation to bestPoint2
-                            let maxContinuousDist2 = maxDistToFix2;
-                            const numSamples2 = Math.max(20, Math.ceil(maxDistToFix2 / 0.25));
-
-                            for (let i = 1; i <= numSamples2; i++) {
-                                const t = i / numSamples2;
-                                const sampleX = fixationPoint[0] * (1 - t) + bestPoint2.geometry.coordinates[0] * t;
-                                const sampleY = fixationPoint[1] * (1 - t) + bestPoint2.geometry.coordinates[1] * t;
-                                const samplePoint = turf.point([sampleX, sampleY]);
-
-                                if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                    const prevT = Math.max(0, (i - 1) / numSamples2);
-                                    maxContinuousDist2 = maxDistToFix2 * prevT;
-                                    break;
-                                }
+                            if (isReachable) {
+                                maxReachableDist2 = dist;
+                                bestEndpoint2 = point.geometry.coordinates;
+                                break;
                             }
+                        }
 
-                            // Use the continuous distances (which may be less than the full distances)
-                            const totalDist = maxContinuousDist1 + maxContinuousDist2;
+                        // Calculate total diameter using the furthest reachable points
+                        if (bestEndpoint1 && bestEndpoint2) {
+                            const totalDist = maxReachableDist1 + maxReachableDist2;
 
-                            // Only consider if both directions have some visible distance
-                            if (maxContinuousDist1 > 0 && maxContinuousDist2 > 0 && totalDist > maxDiameter) {
+                            if (totalDist > maxDiameter) {
                                 maxDiameter = totalDist;
                                 maxAngle = angle;
-                                // Calculate the actual endpoints based on continuous distances
-                                const t1 = maxContinuousDist1 / maxDistToFix1;
-                                const t2 = maxContinuousDist2 / maxDistToFix2;
                                 maxEndpoint1 = {
-                                    x: fixationPoint[0] + (bestPoint1.geometry.coordinates[0] - fixationPoint[0]) * t1,
-                                    y: fixationPoint[1] + (bestPoint1.geometry.coordinates[1] - fixationPoint[1]) * t1
+                                    x: bestEndpoint1[0],
+                                    y: bestEndpoint1[1]
                                 };
                                 maxEndpoint2 = {
-                                    x: fixationPoint[0] + (bestPoint2.geometry.coordinates[0] - fixationPoint[0]) * t2,
-                                    y: fixationPoint[1] + (bestPoint2.geometry.coordinates[1] - fixationPoint[1]) * t2
+                                    x: bestEndpoint2[0],
+                                    y: bestEndpoint2[1]
                                 };
-                                // Log when we find a new max
-                                console.log(`New max at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (continuous: ${maxContinuousDist1.toFixed(2)}+${maxContinuousDist2.toFixed(2)})`);
+                                console.log(`New max at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (${maxReachableDist1.toFixed(2)}+${maxReachableDist2.toFixed(2)})`);
                             }
                         }
                     }
