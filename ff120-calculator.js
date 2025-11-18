@@ -97,21 +97,37 @@ class FF120Calculator {
         container.innerHTML = '';
 
         this.points.forEach(point => {
+            // Create a group for each point (visual + clickable area)
+            const group = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+            group.setAttribute('data-id', point.id);
+
+            // Add tooltip
+            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
+            title.textContent = `座標: (${point.x.toFixed(1)}, ${point.y.toFixed(1)}), 距離: ${point.radius.toFixed(1)}°`;
+            group.appendChild(title);
+
+            // Invisible clickable area (larger for easier clicking)
+            const clickArea = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            clickArea.setAttribute('cx', point.x);
+            clickArea.setAttribute('cy', -point.y); // Flip Y for SVG coordinate system
+            clickArea.setAttribute('r', '3.0');
+            clickArea.setAttribute('fill', 'transparent');
+            clickArea.setAttribute('cursor', 'pointer');
+            group.appendChild(clickArea);
+
+            // Visible point (smaller, for visual clarity)
             const circle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
             circle.setAttribute('cx', point.x);
             circle.setAttribute('cy', -point.y); // Flip Y for SVG coordinate system
-            circle.setAttribute('r', '0.8');
+            circle.setAttribute('r', '1.2');
             circle.setAttribute('class', `test-point ${point.isVisible ? 'on' : 'off'}`);
-            circle.setAttribute('data-id', point.id);
+            circle.setAttribute('pointer-events', 'none'); // Let the clickArea handle clicks
+            group.appendChild(circle);
 
-            // Add tooltip with coordinates
-            const title = document.createElementNS('http://www.w3.org/2000/svg', 'title');
-            title.textContent = `座標: (${point.x.toFixed(1)}, ${point.y.toFixed(1)}), 距離: ${point.radius.toFixed(1)}°`;
-            circle.appendChild(title);
+            // Add click event to the group
+            group.addEventListener('click', () => this.togglePoint(point.id));
 
-            circle.addEventListener('click', () => this.togglePoint(point.id));
-
-            container.appendChild(circle);
+            container.appendChild(group);
         });
     }
 
@@ -131,10 +147,13 @@ class FF120Calculator {
      * Update single point display
      */
     updatePointDisplay(id) {
-        const circle = document.querySelector(`[data-id="${id}"]`);
+        const group = document.querySelector(`g[data-id="${id}"]`);
         const point = this.points.find(p => p.id === id);
-        if (circle && point) {
-            circle.setAttribute('class', `test-point ${point.isVisible ? 'on' : 'off'}`);
+        if (group && point) {
+            const circle = group.querySelector('.test-point');
+            if (circle) {
+                circle.setAttribute('class', `test-point ${point.isVisible ? 'on' : 'off'}`);
+            }
         }
     }
 
