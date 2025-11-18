@@ -421,17 +421,9 @@ class HumphreyFieldCalculator {
             const isFixationVisible = turf.booleanPointInPolygon(fixPoint, visibleRegion);
             console.log('Fixation point visible:', isFixationVisible);
 
-            if (!isFixationVisible) {
-                // Fixation point is not visible
-                console.warn('Fixation point is not in visible region!');
-                return {
-                    maxDiameter: 0,
-                    angleDegrees: 0,
-                    endpoint1: null,
-                    endpoint2: null,
-                    visibleRegion: visibleRegion
-                };
-            }
+            // NOTE: Even if fixation point is not visible (center 4 points not visible),
+            // we still calculate the major axis through the fixation point if peripheral points are visible.
+            // The algorithm works because it uses intersection points with the visible region boundary.
 
             // Test lines at different angles (0 to 180 degrees, 0.25 degree increments)
             for (let angle = 0; angle <= 180; angle += 0.25) {
