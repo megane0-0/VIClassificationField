@@ -522,23 +522,39 @@ class HumphreyFieldCalculator {
                                 }
 
                                 if (p1 && p2) {
-                                    const totalDist = turf.distance(
-                                        turf.point(p1.geometry.coordinates),
-                                        turf.point(p2.geometry.coordinates),
-                                        { units: 'degrees' }
-                                    );
+                                    // Check if the line segment between p1 and p2 is inside the visible region
+                                    const segmentLine = turf.lineString([
+                                        p1.geometry.coordinates,
+                                        p2.geometry.coordinates
+                                    ]);
 
-                                    if (totalDist > maxDiameter) {
-                                        maxDiameter = totalDist;
-                                        maxAngle = angle;
-                                        maxEndpoint1 = {
-                                            x: p1.geometry.coordinates[0],
-                                            y: p1.geometry.coordinates[1]
-                                        };
-                                        maxEndpoint2 = {
-                                            x: p2.geometry.coordinates[0],
-                                            y: p2.geometry.coordinates[1]
-                                        };
+                                    // Sample points along the line to check if it's inside
+                                    const midpoint = [
+                                        (p1.geometry.coordinates[0] + p2.geometry.coordinates[0]) / 2,
+                                        (p1.geometry.coordinates[1] + p2.geometry.coordinates[1]) / 2
+                                    ];
+                                    const midPoint = turf.point(midpoint);
+
+                                    // Check if midpoint is inside visible region
+                                    if (turf.booleanPointInPolygon(midPoint, visibleRegion)) {
+                                        const totalDist = turf.distance(
+                                            turf.point(p1.geometry.coordinates),
+                                            turf.point(p2.geometry.coordinates),
+                                            { units: 'degrees' }
+                                        );
+
+                                        if (totalDist > maxDiameter) {
+                                            maxDiameter = totalDist;
+                                            maxAngle = angle;
+                                            maxEndpoint1 = {
+                                                x: p1.geometry.coordinates[0],
+                                                y: p1.geometry.coordinates[1]
+                                            };
+                                            maxEndpoint2 = {
+                                                x: p2.geometry.coordinates[0],
+                                                y: p2.geometry.coordinates[1]
+                                            };
+                                        }
                                     }
                                 }
                             }
@@ -572,22 +588,42 @@ class HumphreyFieldCalculator {
 
                         // Calculate total diameter
                         if (bestPoint1 && bestPoint2) {
-                            const totalDist = maxDistToFix1 + maxDistToFix2;
+                            // Check if the line segment passes through the visible region
+                            // Sample several points along the line
+                            const numSamples = 5;
+                            let allSamplesInside = true;
 
-                            if (totalDist > maxDiameter) {
-                                maxDiameter = totalDist;
-                                maxAngle = angle;
-                                maxEndpoint1 = {
-                                    x: bestPoint1.geometry.coordinates[0],
-                                    y: bestPoint1.geometry.coordinates[1]
-                                };
-                                maxEndpoint2 = {
-                                    x: bestPoint2.geometry.coordinates[0],
-                                    y: bestPoint2.geometry.coordinates[1]
-                                };
-                                // Log when we find a new max
-                                if (angle % 45 === 0 || maxDiameter < 5) {
-                                    console.log(`New max at angle ${angle}: ${totalDist.toFixed(2)}`);
+                            for (let i = 0; i <= numSamples; i++) {
+                                const t = i / numSamples;
+                                const sampleX = bestPoint1.geometry.coordinates[0] * (1 - t) + bestPoint2.geometry.coordinates[0] * t;
+                                const sampleY = bestPoint1.geometry.coordinates[1] * (1 - t) + bestPoint2.geometry.coordinates[1] * t;
+                                const samplePoint = turf.point([sampleX, sampleY]);
+
+                                if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
+                                    allSamplesInside = false;
+                                    break;
+                                }
+                            }
+
+                            // Only use this diameter if the entire line is inside the visible region
+                            if (allSamplesInside) {
+                                const totalDist = maxDistToFix1 + maxDistToFix2;
+
+                                if (totalDist > maxDiameter) {
+                                    maxDiameter = totalDist;
+                                    maxAngle = angle;
+                                    maxEndpoint1 = {
+                                        x: bestPoint1.geometry.coordinates[0],
+                                        y: bestPoint1.geometry.coordinates[1]
+                                    };
+                                    maxEndpoint2 = {
+                                        x: bestPoint2.geometry.coordinates[0],
+                                        y: bestPoint2.geometry.coordinates[1]
+                                    };
+                                    // Log when we find a new max
+                                    if (angle % 45 === 0 || maxDiameter < 5) {
+                                        console.log(`New max at angle ${angle}: ${totalDist.toFixed(2)}`);
+                                    }
                                 }
                             }
                         }
