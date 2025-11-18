@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>両眼開放エスターマン視野検査 - 最大直径計算ツール</title>
+    <title>視野検査 - 最大直径計算ツール</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
     <script src="ff120-coordinates.js"></script>
@@ -11,11 +11,17 @@
 <body>
     <div class="container">
         <header>
-            <h1>両眼開放エスターマン視野検査 - 最大直径計算</h1>
+            <h1>視野検査 - 最大直径計算ツール</h1>
             <p class="subtitle">視覚障害者スポーツのクラス分け判定支援ツール</p>
         </header>
 
         <div class="controls">
+            <div class="test-type-selection">
+                <label class="test-type-label">検査タイプ:</label>
+                <button id="testTypeEsterman" class="btn btn-test-type active">両眼エスターマン</button>
+                <button id="testTypeFF120Right" class="btn btn-test-type">FF120 右眼</button>
+                <button id="testTypeFF120Left" class="btn btn-test-type">FF120 左眼</button>
+            </div>
             <div class="control-buttons">
                 <button id="selectAll" class="btn btn-primary">全選択</button>
                 <button id="clearAll" class="btn btn-secondary">全解除</button>
@@ -72,6 +78,10 @@
             <div class="results-panel">
                 <h2>📊 計算結果</h2>
                 <div class="result-content">
+                    <div class="result-item">
+                        <span class="result-label">検査タイプ:</span>
+                        <span id="testTypeDisplay" class="result-value">両眼開放エスターマン</span>
+                    </div>
                     <div class="result-item">
                         <span class="result-label">最大直径:</span>
                         <span id="maxDiameter" class="result-value">-</span>

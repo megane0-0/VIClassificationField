@@ -1,13 +1,15 @@
 /**
- * Binocular Esterman Visual Field Maximum Diameter Calculator
+ * Visual Field Maximum Diameter Calculator
+ * Supports multiple test types: Esterman, FF120 Right, FF120 Left
  * IBTA Visual Classification Field Support Tool
- * Version 2.0 - 2025-11-18
+ * Version 2.1 - 2025-11-18
  */
 
 class FF120Calculator {
     constructor() {
         this.points = [];
         this.result = null;
+        this.currentTestType = 'esterman'; // 'esterman', 'ff120-right', 'ff120-left'
         this.svg = document.getElementById('visualField');
         this.init();
     }
@@ -16,12 +18,13 @@ class FF120Calculator {
      * Initialize the calculator
      */
     init() {
-        this.points = getFF120Coordinates();
+        this.points = getVisualFieldCoordinates(this.currentTestType);
         this.calculatePointPolarCoordinates();
         this.renderRadialLines();
         this.renderPoints();
         this.attachEventListeners();
         this.updateResults();
+        this.updateTestTypeDisplay();
     }
 
     /**
@@ -37,6 +40,58 @@ class FF120Calculator {
             if (angle < 0) angle += 360;
             point.direction = Math.round(angle);
         });
+    }
+
+    /**
+     * Switch test type
+     */
+    switchTestType(testType) {
+        if (testType === this.currentTestType) return;
+
+        this.currentTestType = testType;
+        this.points = getVisualFieldCoordinates(testType);
+        this.calculatePointPolarCoordinates();
+        this.renderPoints();
+        this.updateResults();
+        this.updateTestTypeDisplay();
+    }
+
+    /**
+     * Update test type display in results panel
+     */
+    updateTestTypeDisplay() {
+        const testTypeDisplay = document.getElementById('testTypeDisplay');
+        if (!testTypeDisplay) return;
+
+        let displayText = '';
+        switch(this.currentTestType) {
+            case 'esterman':
+                displayText = '両眼開放エスターマン';
+                break;
+            case 'ff120-right':
+                displayText = 'FF120 右眼 (OD)';
+                break;
+            case 'ff120-left':
+                displayText = 'FF120 左眼 (OS)';
+                break;
+        }
+        testTypeDisplay.textContent = displayText;
+    }
+
+    /**
+     * Get test type name for display
+     */
+    getTestTypeName() {
+        switch(this.currentTestType) {
+            case 'esterman':
+                return '両眼開放エスターマン (Binocular Esterman)';
+            case 'ff120-right':
+                return 'ゴールドマン FF120 右眼 (OD)';
+            case 'ff120-left':
+                return 'ゴールドマン FF120 左眼 (OS)';
+            default:
+                return this.currentTestType;
+        }
     }
 
     /**
@@ -461,10 +516,11 @@ class FF120Calculator {
     getResultText() {
         const now = new Date();
         const dateStr = now.toLocaleString('ja-JP');
+        const testTypeName = this.getTestTypeName();
 
-        let text = `両眼開放エスターマン視野検査 最大直径計算結果\n`;
+        let text = `視野検査 最大直径計算結果\n`;
         text += `========================================\n`;
-        text += `検査タイプ: 両眼開放エスターマン (Binocular Esterman)\n`;
+        text += `検査タイプ: ${testTypeName}\n`;
         text += `最大直径: ${this.result.maxDiameter.toFixed(1)}度\n`;
 
         if (this.result.angleDegrees !== 0) {
@@ -528,7 +584,20 @@ class FF120Calculator {
             canvas.toBlob(blob => {
                 const now = new Date();
                 const timestamp = now.toISOString().replace(/[:.]/g, '-').slice(0, -5);
-                const filename = `esterman_binocular_${timestamp}.png`;
+
+                let filePrefix = '';
+                switch(this.currentTestType) {
+                    case 'esterman':
+                        filePrefix = 'esterman_binocular';
+                        break;
+                    case 'ff120-right':
+                        filePrefix = 'ff120_OD';
+                        break;
+                    case 'ff120-left':
+                        filePrefix = 'ff120_OS';
+                        break;
+                }
+                const filename = `${filePrefix}_${timestamp}.png`;
 
                 const a = document.createElement('a');
                 a.href = URL.createObjectURL(blob);
@@ -561,6 +630,35 @@ class FF120Calculator {
      * Attach event listeners to UI controls
      */
     attachEventListeners() {
+        // Test type selection buttons
+        const estermanBtn = document.getElementById('testTypeEsterman');
+        const ff120RightBtn = document.getElementById('testTypeFF120Right');
+        const ff120LeftBtn = document.getElementById('testTypeFF120Left');
+
+        if (estermanBtn) {
+            estermanBtn.addEventListener('click', () => {
+                document.querySelectorAll('.btn-test-type').forEach(btn => btn.classList.remove('active'));
+                estermanBtn.classList.add('active');
+                this.switchTestType('esterman');
+            });
+        }
+
+        if (ff120RightBtn) {
+            ff120RightBtn.addEventListener('click', () => {
+                document.querySelectorAll('.btn-test-type').forEach(btn => btn.classList.remove('active'));
+                ff120RightBtn.classList.add('active');
+                this.switchTestType('ff120-right');
+            });
+        }
+
+        if (ff120LeftBtn) {
+            ff120LeftBtn.addEventListener('click', () => {
+                document.querySelectorAll('.btn-test-type').forEach(btn => btn.classList.remove('active'));
+                ff120LeftBtn.classList.add('active');
+                this.switchTestType('ff120-left');
+            });
+        }
+
         // Control buttons
         document.getElementById('selectAll').addEventListener('click', () => this.selectAll());
         document.getElementById('clearAll').addEventListener('click', () => this.clearAll());

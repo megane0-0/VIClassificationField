@@ -1,22 +1,14 @@
 /**
- * Binocular Esterman Visual Field Test Pattern Coordinates
- * Standard 120-point pattern for binocular visual field testing
- * Used for visual impairment classification in sports
- *
- * NOTE: To replace with Goldmann FF120 coordinates:
- * 1. Replace ESTERMAN_COORDINATES array below with FF120 coordinate data
- * 2. Update getFF120Coordinates() function to handle right/left eye if needed
- * 3. Update title and descriptions in this file and index.html
- * 4. For FF120 with separate right/left eye coordinates:
- *    - Add FF120_RIGHT_EYE_COORDINATES and FF120_LEFT_EYE_COORDINATES arrays
- *    - Modify getFF120Coordinates(eye) to return appropriate array based on eye parameter
+ * Visual Field Test Pattern Coordinates
+ * Supports multiple test types:
+ * - Binocular Esterman (120 points)
+ * - Goldmann FF120 Right Eye (120 points) - TO BE REPLACED WITH ACTUAL DATA
+ * - Goldmann FF120 Left Eye (120 points) - TO BE REPLACED WITH ACTUAL DATA
  */
 
-// Binocular Esterman Pattern Coordinates
-// Coordinates are in degrees from fixation point
-// Format: {x: horizontal (positive=right, negative=left),
-//          y: vertical (positive=up, negative=down)}
-
+// =============================================================================
+// BINOCULAR ESTERMAN COORDINATES (CONFIRMED DATA)
+// =============================================================================
 const ESTERMAN_COORDINATES = [
     {x: -76, y: -3},
     {x: -76, y: -8},
@@ -140,18 +132,124 @@ const ESTERMAN_COORDINATES = [
     {x: 76, y: -8}
 ];
 
-// Verify we have exactly 120 points
+// =============================================================================
+// GOLDMANN FF120 COORDINATES (PLACEHOLDER - REPLACE WITH ACTUAL DATA)
+// =============================================================================
+// TODO: Replace these with actual Goldmann FF120 coordinates when available
+//
+// Instructions for replacement:
+// 1. Obtain the actual FF120 right eye coordinate data (120 points)
+// 2. Replace the FF120_RIGHT_EYE_COORDINATES array below
+// 3. The left eye coordinates will be automatically mirrored from right eye
+//    OR you can provide separate left eye data if available
+// 4. Verify the point count is exactly 120 points
+//
+// Expected format:
+// {x: horizontal degrees (+ = temporal/right, - = nasal/left),
+//  y: vertical degrees (+ = superior/up, - = inferior/down)}
+
+// PLACEHOLDER: Currently using a subset pattern for demonstration
+// This should be replaced with actual 120-point FF120 data
+const FF120_RIGHT_EYE_COORDINATES = [
+    // Central ring (3 degrees) - 6 points
+    {x: 0, y: 3}, {x: 2.6, y: 1.5}, {x: 2.6, y: -1.5}, {x: 0, y: -3},
+    {x: -2.6, y: -1.5}, {x: -2.6, y: 1.5},
+
+    // Ring at 6 degrees - 12 points
+    {x: 0, y: 6}, {x: 3, y: 5.2}, {x: 5.2, y: 3}, {x: 6, y: 0},
+    {x: 5.2, y: -3}, {x: 3, y: -5.2}, {x: 0, y: -6}, {x: -3, y: -5.2},
+    {x: -5.2, y: -3}, {x: -6, y: 0}, {x: -5.2, y: 3}, {x: -3, y: 5.2},
+
+    // Ring at 9 degrees - 12 points
+    {x: 0, y: 9}, {x: 4.5, y: 7.8}, {x: 7.8, y: 4.5}, {x: 9, y: 0},
+    {x: 7.8, y: -4.5}, {x: 4.5, y: -7.8}, {x: 0, y: -9}, {x: -4.5, y: -7.8},
+    {x: -7.8, y: -4.5}, {x: -9, y: 0}, {x: -7.8, y: 4.5}, {x: -4.5, y: 7.8},
+
+    // Ring at 12 degrees - 12 points
+    {x: 0, y: 12}, {x: 6, y: 10.4}, {x: 10.4, y: 6}, {x: 12, y: 0},
+    {x: 10.4, y: -6}, {x: 6, y: -10.4}, {x: 0, y: -12}, {x: -6, y: -10.4},
+    {x: -10.4, y: -6}, {x: -12, y: 0}, {x: -10.4, y: 6}, {x: -6, y: 10.4},
+
+    // Ring at 15 degrees - 12 points
+    {x: 0, y: 15}, {x: 7.5, y: 13}, {x: 13, y: 7.5}, {x: 15, y: 0},
+    {x: 13, y: -7.5}, {x: 7.5, y: -13}, {x: 0, y: -15}, {x: -7.5, y: -13},
+    {x: -13, y: -7.5}, {x: -15, y: 0}, {x: -13, y: 7.5}, {x: -7.5, y: 13},
+
+    // Ring at 21 degrees - 12 points
+    {x: 0, y: 21}, {x: 10.5, y: 18.2}, {x: 18.2, y: 10.5}, {x: 21, y: 0},
+    {x: 18.2, y: -10.5}, {x: 10.5, y: -18.2}, {x: 0, y: -21}, {x: -10.5, y: -18.2},
+    {x: -18.2, y: -10.5}, {x: -21, y: 0}, {x: -18.2, y: 10.5}, {x: -10.5, y: 18.2},
+
+    // Ring at 27 degrees - 12 points
+    {x: 0, y: 27}, {x: 13.5, y: 23.4}, {x: 23.4, y: 13.5}, {x: 27, y: 0},
+    {x: 23.4, y: -13.5}, {x: 13.5, y: -23.4}, {x: 0, y: -27}, {x: -13.5, y: -23.4},
+    {x: -23.4, y: -13.5}, {x: -27, y: 0}, {x: -23.4, y: 13.5}, {x: -13.5, y: 23.4},
+
+    // Peripheral points - Temporal side (right side for OD) - 12 points
+    {x: 33, y: 0}, {x: 39, y: 0}, {x: 45, y: 0}, {x: 51, y: 0},
+    {x: 33, y: 9}, {x: 33, y: -9}, {x: 39, y: 11.7}, {x: 39, y: -11.7},
+    {x: 45, y: 13}, {x: 45, y: -13}, {x: 51, y: 15}, {x: 51, y: -15},
+
+    // Peripheral points - Superior temporal - 4 points
+    {x: 23.3, y: 23.3}, {x: 27.6, y: 27.6}, {x: 31.8, y: 31.8}, {x: 36, y: 36},
+
+    // Peripheral points - Inferior temporal - 4 points
+    {x: 23.3, y: -23.3}, {x: 27.6, y: -27.6}, {x: 31.8, y: -31.8}, {x: 36, y: -36},
+
+    // Peripheral points - Superior - 8 points
+    {x: 0, y: 33}, {x: 0, y: 39}, {x: 0, y: 45}, {x: 0, y: 51},
+    {x: 9, y: 33}, {x: -9, y: 33}, {x: 11.7, y: 39}, {x: -11.7, y: 39},
+
+    // Peripheral points - Inferior - 8 points
+    {x: 0, y: -33}, {x: 0, y: -39}, {x: 0, y: -45}, {x: 0, y: -51},
+    {x: 9, y: -33}, {x: -9, y: -33}, {x: 11.7, y: -39}, {x: -11.7, y: -39},
+
+    // Peripheral points - Nasal side (left side for OD) - 4 points
+    {x: -33, y: 0}, {x: -39, y: 0}, {x: -27, y: 9}, {x: -27, y: -9},
+
+    // Peripheral points - Superior nasal - 3 points
+    {x: -23.3, y: 23.3}, {x: -27.6, y: 27.6}, {x: -31.8, y: 31.8},
+
+    // Peripheral points - Inferior nasal - 3 points
+    {x: -23.3, y: -23.3}, {x: -27.6, y: -27.6}, {x: -31.8, y: -31.8}
+];
+
+// Verify point counts
 if (ESTERMAN_COORDINATES.length !== 120) {
-    console.warn(`Expected 120 points, but got ${ESTERMAN_COORDINATES.length}`);
+    console.warn(`Esterman: Expected 120 points, but got ${ESTERMAN_COORDINATES.length}`);
+}
+if (FF120_RIGHT_EYE_COORDINATES.length !== 120) {
+    console.warn(`FF120 Right Eye: Expected 120 points, but got ${FF120_RIGHT_EYE_COORDINATES.length}`);
 }
 
 /**
- * Get visual field coordinates
- * @param {string} eye - Not used for Esterman (binocular test), kept for compatibility
+ * Get visual field coordinates based on test type
+ * @param {string} testType - 'esterman', 'ff120-right', or 'ff120-left'
  * @returns {Array} Array of 120 coordinate objects
  */
-function getFF120Coordinates(eye = 'binocular') {
-    return ESTERMAN_COORDINATES.map((coord, index) => ({
+function getVisualFieldCoordinates(testType = 'esterman') {
+    let coords;
+
+    switch(testType) {
+        case 'esterman':
+            coords = ESTERMAN_COORDINATES;
+            break;
+        case 'ff120-right':
+            coords = FF120_RIGHT_EYE_COORDINATES;
+            break;
+        case 'ff120-left':
+            // Mirror FF120 right eye coordinates horizontally for left eye
+            coords = FF120_RIGHT_EYE_COORDINATES.map(coord => ({
+                x: -coord.x,  // Mirror horizontally
+                y: coord.y
+            }));
+            break;
+        default:
+            console.error(`Unknown test type: ${testType}`);
+            coords = ESTERMAN_COORDINATES;
+    }
+
+    return coords.map((coord, index) => ({
         id: index,
         x: coord.x,
         y: coord.y,
@@ -159,24 +257,14 @@ function getFF120Coordinates(eye = 'binocular') {
     }));
 }
 
-/**
- * Example for FF120 with separate eye coordinates:
- *
- * const FF120_RIGHT_EYE_COORDINATES = [
- *     {x: 0, y: 3}, {x: 2.6, y: 1.5}, ...  // Your FF120 right eye coordinates
- * ];
- *
- * const FF120_LEFT_EYE_COORDINATES = [
- *     {x: 0, y: 3}, {x: -2.6, y: 1.5}, ...  // Your FF120 left eye coordinates (mirrored)
- * ];
- *
- * function getFF120Coordinates(eye = 'right') {
- *     const coords = eye === 'right' ? FF120_RIGHT_EYE_COORDINATES : FF120_LEFT_EYE_COORDINATES;
- *     return coords.map((coord, index) => ({
- *         id: index,
- *         x: coord.x,
- *         y: coord.y,
- *         isVisible: false
- *     }));
- * }
- */
+// Backward compatibility: Keep the old function name
+function getFF120Coordinates(eye = 'binocular') {
+    if (eye === 'binocular') {
+        return getVisualFieldCoordinates('esterman');
+    } else if (eye === 'right') {
+        return getVisualFieldCoordinates('ff120-right');
+    } else if (eye === 'left') {
+        return getVisualFieldCoordinates('ff120-left');
+    }
+    return getVisualFieldCoordinates('esterman');
+}

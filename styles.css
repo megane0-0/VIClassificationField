@@ -61,6 +61,20 @@ header h1 {
     font-size: 14px;
 }
 
+.test-type-selection {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding-right: 20px;
+    border-right: 2px solid #e0e0e0;
+}
+
+.test-type-label {
+    font-weight: 600;
+    color: #333;
+    font-size: 14px;
+}
+
 .control-buttons {
     display: flex;
     gap: 10px;
@@ -117,6 +131,27 @@ header h1 {
 }
 
 .btn-eye.active:hover {
+    background: #5568d3;
+}
+
+.btn-test-type {
+    background: #e0e0e0;
+    color: #333;
+    padding: 8px 16px;
+    font-size: 13px;
+}
+
+.btn-test-type:hover {
+    background: #d0d0d0;
+    transform: translateY(-1px);
+}
+
+.btn-test-type.active {
+    background: #667eea;
+    color: white;
+}
+
+.btn-test-type.active:hover {
     background: #5568d3;
 }
 
