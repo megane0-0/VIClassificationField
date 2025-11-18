@@ -522,13 +522,13 @@ class HumphreyFieldCalculator {
                                 }
 
                                 if (p1 && p2) {
-                                    // Check rays from fixation point to p1 and p2 separately
+                                    // Find maximum continuous distance along each ray
                                     const dist1 = Math.sqrt(
                                         Math.pow(p1.geometry.coordinates[0] - fixationPoint[0], 2) +
                                         Math.pow(p1.geometry.coordinates[1] - fixationPoint[1], 2)
                                     );
+                                    let maxContinuousDist1 = dist1;
                                     const numSamples1 = Math.max(20, Math.ceil(dist1 / 0.25));
-                                    let ray1Inside = true;
 
                                     for (let i = 1; i <= numSamples1; i++) {
                                         const t = i / numSamples1;
@@ -537,7 +537,8 @@ class HumphreyFieldCalculator {
                                         const samplePoint = turf.point([sampleX, sampleY]);
 
                                         if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                            ray1Inside = false;
+                                            const prevT = Math.max(0, (i - 1) / numSamples1);
+                                            maxContinuousDist1 = dist1 * prevT;
                                             break;
                                         }
                                     }
@@ -546,8 +547,8 @@ class HumphreyFieldCalculator {
                                         Math.pow(p2.geometry.coordinates[0] - fixationPoint[0], 2) +
                                         Math.pow(p2.geometry.coordinates[1] - fixationPoint[1], 2)
                                     );
+                                    let maxContinuousDist2 = dist2;
                                     const numSamples2 = Math.max(20, Math.ceil(dist2 / 0.25));
-                                    let ray2Inside = true;
 
                                     for (let i = 1; i <= numSamples2; i++) {
                                         const t = i / numSamples2;
@@ -556,31 +557,27 @@ class HumphreyFieldCalculator {
                                         const samplePoint = turf.point([sampleX, sampleY]);
 
                                         if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                            ray2Inside = false;
+                                            const prevT = Math.max(0, (i - 1) / numSamples2);
+                                            maxContinuousDist2 = dist2 * prevT;
                                             break;
                                         }
                                     }
 
-                                    // Check if both rays are inside visible region
-                                    if (ray1Inside && ray2Inside) {
-                                        const totalDist = turf.distance(
-                                            turf.point(p1.geometry.coordinates),
-                                            turf.point(p2.geometry.coordinates),
-                                            { units: 'degrees' }
-                                        );
+                                    const totalDist = maxContinuousDist1 + maxContinuousDist2;
 
-                                        if (totalDist > maxDiameter) {
-                                            maxDiameter = totalDist;
-                                            maxAngle = angle;
-                                            maxEndpoint1 = {
-                                                x: p1.geometry.coordinates[0],
-                                                y: p1.geometry.coordinates[1]
-                                            };
-                                            maxEndpoint2 = {
-                                                x: p2.geometry.coordinates[0],
-                                                y: p2.geometry.coordinates[1]
-                                            };
-                                        }
+                                    if (maxContinuousDist1 > 0 && maxContinuousDist2 > 0 && totalDist > maxDiameter) {
+                                        maxDiameter = totalDist;
+                                        maxAngle = angle;
+                                        const t1 = maxContinuousDist1 / dist1;
+                                        const t2 = maxContinuousDist2 / dist2;
+                                        maxEndpoint1 = {
+                                            x: fixationPoint[0] + (p1.geometry.coordinates[0] - fixationPoint[0]) * t1,
+                                            y: fixationPoint[1] + (p1.geometry.coordinates[1] - fixationPoint[1]) * t1
+                                        };
+                                        maxEndpoint2 = {
+                                            x: fixationPoint[0] + (p2.geometry.coordinates[0] - fixationPoint[0]) * t2,
+                                            y: fixationPoint[1] + (p2.geometry.coordinates[1] - fixationPoint[1]) * t2
+                                        };
                                     }
                                 }
                             }
@@ -614,18 +611,14 @@ class HumphreyFieldCalculator {
 
                         // Calculate total diameter
                         if (bestPoint1 && bestPoint2) {
-                            // IMPORTANT: Check the two rays separately, not the line between them
-                            // Ray 1: from fixation point to bestPoint1
-                            // Ray 2: from fixation point to bestPoint2
-                            // This is crucial for non-convex visible regions
+                            // IMPORTANT: Find the maximum CONTINUOUS distance from fixation point
+                            // along each ray. If a ray exits the visible region, only count up to
+                            // where it exits.
 
                             // Check ray from fixation to bestPoint1
-                            const dist1 = Math.sqrt(
-                                Math.pow(bestPoint1.geometry.coordinates[0] - fixationPoint[0], 2) +
-                                Math.pow(bestPoint1.geometry.coordinates[1] - fixationPoint[1], 2)
-                            );
-                            const numSamples1 = Math.max(20, Math.ceil(dist1 / 0.25));
-                            let ray1Inside = true;
+                            // Find the furthest continuous point along this ray
+                            let maxContinuousDist1 = maxDistToFix1; // Start with full distance
+                            const numSamples1 = Math.max(20, Math.ceil(maxDistToFix1 / 0.25));
 
                             for (let i = 1; i <= numSamples1; i++) {
                                 const t = i / numSamples1;
@@ -634,18 +627,16 @@ class HumphreyFieldCalculator {
                                 const samplePoint = turf.point([sampleX, sampleY]);
 
                                 if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                    ray1Inside = false;
+                                    // Found an exit point - use the previous sample distance
+                                    const prevT = Math.max(0, (i - 1) / numSamples1);
+                                    maxContinuousDist1 = maxDistToFix1 * prevT;
                                     break;
                                 }
                             }
 
                             // Check ray from fixation to bestPoint2
-                            const dist2 = Math.sqrt(
-                                Math.pow(bestPoint2.geometry.coordinates[0] - fixationPoint[0], 2) +
-                                Math.pow(bestPoint2.geometry.coordinates[1] - fixationPoint[1], 2)
-                            );
-                            const numSamples2 = Math.max(20, Math.ceil(dist2 / 0.25));
-                            let ray2Inside = true;
+                            let maxContinuousDist2 = maxDistToFix2;
+                            const numSamples2 = Math.max(20, Math.ceil(maxDistToFix2 / 0.25));
 
                             for (let i = 1; i <= numSamples2; i++) {
                                 const t = i / numSamples2;
@@ -654,35 +645,32 @@ class HumphreyFieldCalculator {
                                 const samplePoint = turf.point([sampleX, sampleY]);
 
                                 if (!turf.booleanPointInPolygon(samplePoint, visibleRegion)) {
-                                    ray2Inside = false;
+                                    const prevT = Math.max(0, (i - 1) / numSamples2);
+                                    maxContinuousDist2 = maxDistToFix2 * prevT;
                                     break;
                                 }
                             }
 
-                            // Only use this diameter if BOTH rays are inside the visible region
-                            if (ray1Inside && ray2Inside) {
-                                const totalDist = maxDistToFix1 + maxDistToFix2;
+                            // Use the continuous distances (which may be less than the full distances)
+                            const totalDist = maxContinuousDist1 + maxContinuousDist2;
 
-                                if (totalDist > maxDiameter) {
-                                    maxDiameter = totalDist;
-                                    maxAngle = angle;
-                                    maxEndpoint1 = {
-                                        x: bestPoint1.geometry.coordinates[0],
-                                        y: bestPoint1.geometry.coordinates[1]
-                                    };
-                                    maxEndpoint2 = {
-                                        x: bestPoint2.geometry.coordinates[0],
-                                        y: bestPoint2.geometry.coordinates[1]
-                                    };
-                                    // Log when we find a new max
-                                    console.log(`New max at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees`);
-                                }
-                            } else {
-                                // Log when a potentially good diameter is rejected
-                                const totalDist = maxDistToFix1 + maxDistToFix2;
-                                if (totalDist > maxDiameter * 0.9 && totalDist > 5) {
-                                    console.log(`Rejected at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (ray exits visible region)`);
-                                }
+                            // Only consider if both directions have some visible distance
+                            if (maxContinuousDist1 > 0 && maxContinuousDist2 > 0 && totalDist > maxDiameter) {
+                                maxDiameter = totalDist;
+                                maxAngle = angle;
+                                // Calculate the actual endpoints based on continuous distances
+                                const t1 = maxContinuousDist1 / maxDistToFix1;
+                                const t2 = maxContinuousDist2 / maxDistToFix2;
+                                maxEndpoint1 = {
+                                    x: fixationPoint[0] + (bestPoint1.geometry.coordinates[0] - fixationPoint[0]) * t1,
+                                    y: fixationPoint[1] + (bestPoint1.geometry.coordinates[1] - fixationPoint[1]) * t1
+                                };
+                                maxEndpoint2 = {
+                                    x: fixationPoint[0] + (bestPoint2.geometry.coordinates[0] - fixationPoint[0]) * t2,
+                                    y: fixationPoint[1] + (bestPoint2.geometry.coordinates[1] - fixationPoint[1]) * t2
+                                };
+                                // Log when we find a new max
+                                console.log(`New max at angle ${angle.toFixed(2)}°: ${totalDist.toFixed(4)} degrees (continuous: ${maxContinuousDist1.toFixed(2)}+${maxContinuousDist2.toFixed(2)})`);
                             }
                         }
                     }
