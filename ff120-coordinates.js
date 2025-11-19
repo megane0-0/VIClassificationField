@@ -2,8 +2,8 @@
  * Visual Field Test Pattern Coordinates
  * Supports multiple test types:
  * - Binocular Esterman (120 points)
- * - Goldmann FF120 Right Eye (120 points) - TO BE REPLACED WITH ACTUAL DATA
- * - Goldmann FF120 Left Eye (120 points) - TO BE REPLACED WITH ACTUAL DATA
+ * - FF120 Right Eye (120 points) - TO BE REPLACED WITH ACTUAL DATA
+ * - FF120 Left Eye (120 points) - TO BE REPLACED WITH ACTUAL DATA
  */
 
 // =============================================================================
@@ -133,9 +133,9 @@ const ESTERMAN_COORDINATES = [
 ];
 
 // =============================================================================
-// GOLDMANN FF120 COORDINATES (PLACEHOLDER - REPLACE WITH ACTUAL DATA)
+// FF120 COORDINATES (PLACEHOLDER - REPLACE WITH ACTUAL DATA)
 // =============================================================================
-// TODO: Replace these with actual Goldmann FF120 coordinates when available
+// TODO: Replace these with actual FF120 coordinates when available
 //
 // Instructions for replacement:
 // 1. Obtain the actual FF120 right eye coordinate data (120 points)

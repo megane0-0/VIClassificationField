@@ -86,9 +86,9 @@ class FF120Calculator {
             case 'esterman':
                 return '両眼開放エスターマン (Binocular Esterman)';
             case 'ff120-right':
-                return 'ゴールドマン FF120 右眼 (OD)';
+                return 'FF120 右眼 (OD)';
             case 'ff120-left':
-                return 'ゴールドマン FF120 左眼 (OS)';
+                return 'FF120 左眼 (OS)';
             default:
                 return this.currentTestType;
         }
