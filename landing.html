@@ -1,0 +1,199 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>視野検査 最大直径計算ツール - ホーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 15px;
+            padding: 35px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .tool-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .tool-title {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .tool-description {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .tool-features {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .tool-features li {
+            padding: 8px 0;
+            color: #4a5568;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .tool-features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #48bb78;
+            font-weight: bold;
+        }
+
+        .tool-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.3s ease;
+            text-align: center;
+        }
+
+        .tool-button:hover {
+            opacity: 0.9;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            opacity: 0.9;
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tool-card {
+                padding: 25px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>視野検査 最大直径計算ツール</h1>
+            <p class="subtitle">視覚障害者スポーツのクラス分け判定支援</p>
+        </header>
+
+        <div class="tools-grid">
+            <!-- Central Visual Field Tool -->
+            <a href="central.html" class="tool-card">
+                <div class="tool-icon">🎯</div>
+                <h2 class="tool-title">中心視野検査ツール</h2>
+                <p class="tool-description">
+                    ハンフリー視野検査（10-2, 30-2）の測定点をインタラクティブに入力し、固視点を通る視野の最大直径を計算します。
+                </p>
+                <ul class="tool-features">
+                    <li>ハンフリー 10-2（68点）</li>
+                    <li>ハンフリー 30-2（76点）</li>
+                    <li>半盲境界線除外機能</li>
+                    <li>リアルタイム計算</li>
+                </ul>
+                <span class="tool-button">中心視野ツールを開く →</span>
+            </a>
+
+            <!-- Peripheral Visual Field Tool -->
+            <a href="index.html" class="tool-card">
+                <div class="tool-icon">🌐</div>
+                <h2 class="tool-title">周辺視野検査ツール</h2>
+                <p class="tool-description">
+                    FF120およびエスターマン視野検査の測定点をインタラクティブに入力し、固視点を通る視野の最大直径を計算します。
+                </p>
+                <ul class="tool-features">
+                    <li>両眼開放エスターマン（120点）</li>
+                    <li>FF120 右眼（120点）</li>
+                    <li>FF120 左眼（120点）</li>
+                    <li>半盲境界線除外機能</li>
+                </ul>
+                <span class="tool-button">周辺視野ツールを開く →</span>
+            </a>
+        </div>
+
+        <footer class="footer">
+            <p><strong>IBTA視覚障害者スポーツクラス分け判定支援ツール</strong></p>
+            <p>バージョン 2.0 | 2025年11月</p>
+            <p>⚠️ このツールは補助的な判定支援ツールです。正式なクラス分け判定は、必ず有資格者によって行われる必要があります。</p>
+        </footer>
+    </div>
+</body>
+</html>

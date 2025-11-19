@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ハンフリー視野検査 - 最大直径計算ツール（中心視野用）</title>
+    <link rel="stylesheet" href="central-styles.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>ハンフリー視野検査 - 最大直径計算ツール</h1>
+            <p class="subtitle">視覚障害者スポーツのクラス分け判定支援</p>
+        </header>
+
+        <section class="controls">
+            <div class="test-type-selector">
+                <label>検査タイプ:</label>
+                <div class="radio-group">
+                    <label class="radio-label">
+                        <input type="radio" name="testType" value="10-2" checked>
+                        <span>10-2</span>
+                    </label>
+                    <label class="radio-label">
+                        <input type="radio" name="testType" value="30-2">
+                        <span>30-2</span>
+                    </label>
+                </div>
+            </div>
+
+            <div class="button-group">
+                <button id="selectAll" class="btn btn-secondary">全選択</button>
+                <button id="deselectAll" class="btn btn-secondary">全解除</button>
+                <button id="reset" class="btn btn-secondary">リセット</button>
+            </div>
+        </section>
+
+        <section class="visual-field-container">
+            <div class="field-header">
+                <h2>視野測定点マップ</h2>
+                <p class="instruction">クリックで点を切り替え</p>
+            </div>
+            <div class="canvas-wrapper">
+                <svg id="visualField" width="600" height="600"></svg>
+            </div>
+            <div class="legend">
+                <span class="legend-item">
+                    <span class="legend-dot visible"></span> 見える
+                </span>
+                <span class="legend-item">
+                    <span class="legend-dot invisible"></span> 見えない
+                </span>
+                <span class="legend-item">
+                    <span class="legend-fixation">⊕</span> 固視点
+                </span>
+            </div>
+        </section>
+
+        <section class="results">
+            <h2>📊 計算結果</h2>
+            <div class="result-content">
+                <div class="result-item">
+                    <label>最大直径:</label>
+                    <span id="maxDiameter" class="result-value">-- 度</span>
+                </div>
+                <div class="result-item">
+                    <label>方向:</label>
+                    <span id="direction" class="result-value">--</span>
+                </div>
+                <div class="result-item">
+                    <label>端点1:</label>
+                    <span id="endpoint1" class="result-value">--</span>
+                </div>
+                <div class="result-item">
+                    <label>端点2:</label>
+                    <span id="endpoint2" class="result-value">--</span>
+                </div>
+            </div>
+            <div class="button-group">
+                <button id="copyResults" class="btn btn-primary">結果をコピー</button>
+                <button id="saveImage" class="btn btn-primary">画像として保存</button>
+            </div>
+        </section>
+
+        <footer>
+            <p>IBTA視覚障害者スポーツクラス分け判定支援ツール v1.0</p>
+        </footer>
+    </div>
+
+    <!-- Include Turf.js for geometric calculations -->
+    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
+    <script src="central-data.js"></script>
+    <script src="central-calculator.js"></script>
+</body>
+</html>
