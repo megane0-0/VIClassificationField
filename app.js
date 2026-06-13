@@ -504,14 +504,24 @@ class HumphreyFieldCalculator {
                             }).sort((a, b) => b.dist - a.dist); // furthest first
 
                             if (sortedAll.length >= 2) {
-                                // Take the two furthest points as endpoints
+                                // Take the two furthest points as potential endpoints
                                 const p1 = sortedAll[0];
                                 const p2 = sortedAll[1];
 
-                                // For each endpoint, find all intersections along that ray and calculate visible length
-                                // Direction 1
+                                // Validate that p1 and p2 are on DIFFERENT rays (not collinear)
                                 const dx1 = p1.coord[0] - fixationPoint[0];
                                 const dy1 = p1.coord[1] - fixationPoint[1];
+                                const dx2 = p2.coord[0] - fixationPoint[0];
+                                const dy2 = p2.coord[1] - fixationPoint[1];
+                                const crossProduct = Math.abs(dx1 * dy2 - dy1 * dx2);
+
+                                // If cross product is too small, p1 and p2 are on the same ray - skip to avoid double-counting
+                                if (crossProduct < 0.1) {
+                                    continue; // Points are collinear, can't form a diameter
+                                }
+
+                                // For each endpoint, find all intersections along that ray and calculate visible length
+                                // Direction 1 (p1 already has dx1, dy1 calculated above)
                                 const pointsOnRay1 = sortedAll.filter(p => {
                                     const dx = p.coord[0] - fixationPoint[0];
                                     const dy = p.coord[1] - fixationPoint[1];
@@ -541,9 +551,7 @@ class HumphreyFieldCalculator {
                                     }
                                 }
 
-                                // Direction 2
-                                const dx2 = p2.coord[0] - fixationPoint[0];
-                                const dy2 = p2.coord[1] - fixationPoint[1];
+                                // Direction 2 (dx2, dy2 already calculated above for validation)
                                 const pointsOnRay2 = sortedAll.filter(p => {
                                     const dx = p.coord[0] - fixationPoint[0];
                                     const dy = p.coord[1] - fixationPoint[1];
@@ -587,6 +595,7 @@ class HumphreyFieldCalculator {
                         // Process side 1
                         let visibleLength1 = 0;
                         let bestEndpoint1 = null;
+                        let furthestVisibleDist1 = 0;
                         if (side1Points.length > 0) {
                             // Sort by distance from fixation
                             const sortedPoints = side1Points.map(p => {
@@ -598,8 +607,6 @@ class HumphreyFieldCalculator {
                                 return { coord, dist };
                             }).sort((a, b) => a.dist - b.dist);
 
-                            bestEndpoint1 = sortedPoints[sortedPoints.length - 1].coord;
-
                             // Check segment from fixation to first intersection
                             const firstDist = sortedPoints[0].dist;
                             const midX = fixationPoint[0] + (sortedPoints[0].coord[0] - fixationPoint[0]) / 2;
@@ -608,6 +615,8 @@ class HumphreyFieldCalculator {
 
                             if (turf.booleanPointInPolygon(midPoint, visibleRegion)) {
                                 visibleLength1 += firstDist;
+                                furthestVisibleDist1 = firstDist;
+                                bestEndpoint1 = sortedPoints[0].coord;
                             }
 
                             // Check segments between consecutive intersections
@@ -622,6 +631,8 @@ class HumphreyFieldCalculator {
 
                                 if (turf.booleanPointInPolygon(segMidPoint, visibleRegion)) {
                                     visibleLength1 += segmentLength;
+                                    furthestVisibleDist1 = point2.dist;
+                                    bestEndpoint1 = point2.coord;
                                 }
                             }
                         }
@@ -629,6 +640,7 @@ class HumphreyFieldCalculator {
                         // Process side 2
                         let visibleLength2 = 0;
                         let bestEndpoint2 = null;
+                        let furthestVisibleDist2 = 0;
                         if (side2Points.length > 0) {
                             const sortedPoints = side2Points.map(p => {
                                 const coord = p.geometry.coordinates;
@@ -639,8 +651,6 @@ class HumphreyFieldCalculator {
                                 return { coord, dist };
                             }).sort((a, b) => a.dist - b.dist);
 
-                            bestEndpoint2 = sortedPoints[sortedPoints.length - 1].coord;
-
                             const firstDist = sortedPoints[0].dist;
                             const midX = fixationPoint[0] + (sortedPoints[0].coord[0] - fixationPoint[0]) / 2;
                             const midY = fixationPoint[1] + (sortedPoints[0].coord[1] - fixationPoint[1]) / 2;
@@ -648,6 +658,8 @@ class HumphreyFieldCalculator {
 
                             if (turf.booleanPointInPolygon(midPoint, visibleRegion)) {
                                 visibleLength2 += firstDist;
+                                furthestVisibleDist2 = firstDist;
+                                bestEndpoint2 = sortedPoints[0].coord;
                             }
 
                             for (let i = 0; i < sortedPoints.length - 1; i++) {
@@ -661,12 +673,15 @@ class HumphreyFieldCalculator {
 
                                 if (turf.booleanPointInPolygon(segMidPoint, visibleRegion)) {
                                     visibleLength2 += segmentLength;
+                                    furthestVisibleDist2 = point2.dist;
+                                    bestEndpoint2 = point2.coord;
                                 }
                             }
                         }
 
                         // Calculate total major axis
-                        if (visibleLength1 > 0 && visibleLength2 > 0) {
+                        // Use OR condition to allow peripheral-only patterns (one side may have gaps)
+                        if (visibleLength1 > 0 || visibleLength2 > 0) {
                             const totalDist = visibleLength1 + visibleLength2;
 
                             if (totalDist > maxDiameter) {
