@@ -3,112 +3,197 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>視野検査 - 最大直径計算ツール</title>
-    <link rel="stylesheet" href="styles.css">
-    <script src="https://cdn.jsdelivr.net/npm/@turf/turf@7/turf.min.js"></script>
-    <script src="ff120-coordinates.js"></script>
+    <title>視野検査 最大直径計算ツール - ホーム</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans JP', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 900px;
+            width: 100%;
+        }
+
+        header {
+            text-align: center;
+            color: white;
+            margin-bottom: 50px;
+        }
+
+        h1 {
+            font-size: 2.5em;
+            margin-bottom: 15px;
+            font-weight: 700;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+        }
+
+        .subtitle {
+            font-size: 1.2em;
+            opacity: 0.95;
+        }
+
+        .tools-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        .tool-card {
+            background: white;
+            border-radius: 15px;
+            padding: 35px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            text-decoration: none;
+            color: inherit;
+            display: block;
+        }
+
+        .tool-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .tool-icon {
+            font-size: 3em;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .tool-title {
+            font-size: 1.8em;
+            font-weight: 600;
+            margin-bottom: 15px;
+            color: #2d3748;
+        }
+
+        .tool-description {
+            color: #4a5568;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+
+        .tool-features {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .tool-features li {
+            padding: 8px 0;
+            color: #4a5568;
+            position: relative;
+            padding-left: 25px;
+        }
+
+        .tool-features li:before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            color: #48bb78;
+            font-weight: bold;
+        }
+
+        .tool-button {
+            display: inline-block;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 12px 30px;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: opacity 0.3s ease;
+            text-align: center;
+        }
+
+        .tool-button:hover {
+            opacity: 0.9;
+        }
+
+        .footer {
+            text-align: center;
+            color: white;
+            margin-top: 40px;
+            opacity: 0.9;
+        }
+
+        .footer p {
+            margin: 5px 0;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 2em;
+            }
+
+            .tools-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .tool-card {
+                padding: 25px;
+            }
+        }
+    </style>
 </head>
 <body>
     <div class="container">
         <header>
-                       <h1>視野検査 - 最大直径計算ツール<br><span class="subtitle-en">Visual Field Maximum Diameter Calculator</span></h1>
-            <p class="subtitle">視覚障害者スポーツのクラス分け判定支援ツール<br><span class="subtitle-en">IBTA Visual Impairment Classification Support Tool</span></p>
+            <h1>視野検査 最大直径計算ツール</h1>
+            <p class="subtitle">視覚障害者スポーツのクラス分け判定支援</p>
         </header>
 
-        <div class="controls">
-            <div class="test-type-selection">
-                               <label class="test-type-label">検査タイプ / Test Type:</label>
-                <button id="testTypeEsterman" class="btn btn-test-type active">両眼エスターマン<br>Binocular Esterman</button>
-                <button id="testTypeFF120Right" class="btn btn-test-type">FF120 右眼<br>Right Eye (OD)</button>
-                <button id="testTypeFF120Left" class="btn btn-test-type">FF120 左眼<br>Left Eye (OS)</button>
-            </div>
-            <div class="control-buttons">
-                                <button id="selectAll" class="btn btn-primary">全選択 / Select All</button>
-                <button id="clearAll" class="btn btn-secondary">全解除 / Clear All</button>
-                <button id="reset" class="btn btn-secondary">リセット / Reset</button>
-            </div>
+        <div class="tools-grid">
+            <!-- Central Visual Field Tool -->
+            <a href="central.html" class="tool-card">
+                <div class="tool-icon">🎯</div>
+                <h2 class="tool-title">中心視野検査ツール</h2>
+                <p class="tool-description">
+                    ハンフリー視野検査（10-2, 30-2）の測定点をインタラクティブに入力し、固視点を通る視野の最大直径を計算します。
+                </p>
+                <ul class="tool-features">
+                    <li>ハンフリー 10-2（68点）</li>
+                    <li>ハンフリー 30-2（76点）</li>
+                    <li>半盲境界線除外機能</li>
+                    <li>リアルタイム計算</li>
+                </ul>
+                <span class="tool-button">中心視野ツールを開く →</span>
+            </a>
+
+            <!-- Peripheral Visual Field Tool -->
+            <a href="peripheral.html" class="tool-card">
+                <div class="tool-icon">🌐</div>
+                <h2 class="tool-title">周辺視野検査ツール</h2>
+                <p class="tool-description">
+                    FF120およびエスターマン視野検査の測定点をインタラクティブに入力し、固視点を通る視野の最大直径を計算します。
+                </p>
+                <ul class="tool-features">
+                    <li>両眼開放エスターマン（120点）</li>
+                    <li>FF120 右眼（120点）</li>
+                    <li>FF120 左眼（120点）</li>
+                    <li>半盲境界線除外機能</li>
+                </ul>
+                <span class="tool-button">周辺視野ツールを開く →</span>
+            </a>
         </div>
 
-        <div class="main-content">
-            <div class="canvas-container">
-                               <h2>視野測定点マップ / Visual Field Test Points Map<br><span class="subtitle-en">（クリックで切り替え / Click to toggle）</span></h2>
-                <div class="legend">
-                    <span class="legend-item">
-                        <span class="legend-dot visible"></span>
-                                                <span>緑●=見える / Visible</span>
-                    </span>
-                    <span class="legend-item">
-                        <span class="legend-dot invisible"></span>
-                        <span>灰○=見えない / Not Visible</span>
-                    </span>
-                </div>
-                <svg id="visualField" width="700" height="700" viewBox="-60 -60 120 120">
-                    <!-- Grid lines (optional) -->
-                    <g id="gridLines" class="grid-lines">
-                        <!-- Concentric circles -->
-                        <circle cx="0" cy="0" r="10" class="grid-circle" />
-                        <circle cx="0" cy="0" r="20" class="grid-circle" />
-                        <circle cx="0" cy="0" r="30" class="grid-circle" />
-                        <circle cx="0" cy="0" r="40" class="grid-circle" />
-                        <circle cx="0" cy="0" r="50" class="grid-circle" />
-                        <!-- Radial lines -->
-                    </g>
-
-                    <!-- Visible region (filled polygon) -->
-                    <g id="visibleRegion"></g>
-
-                    <!-- Boundary lines -->
-                    <g id="boundaryLines"></g>
-
-                    <!-- Maximum diameter line -->
-                    <g id="diameterLine"></g>
-
-                    <!-- Test points -->
-                    <g id="testPoints"></g>
-
-                    <!-- Fixation point -->
-                    <g id="fixationPoint">
-                        <line x1="-2" y1="0" x2="2" y2="0" stroke="#F44336" stroke-width="0.5" />
-                        <line x1="0" y1="-2" x2="0" y2="2" stroke="#F44336" stroke-width="0.5" />
-                        <circle cx="0" cy="0" r="1" fill="#F44336" />
-                    </g>
-                </svg>
-            </div>
-
-            <div class="results-panel">
-                           <h2>📊 計算結果 / Results</h2>
-                <div class="result-content">
-                    <div class="result-item">
-    <label>検査タイプ / Test Type:</label>
-    <span id="testTypeDisplay"></span>
-</div>
-<div class="result-item">
-    <label>最大直径 / Maximum Diameter:</label>
-    <span id="maxDiameter">--</span>
-</div>
-<div class="result-item">
-    <label>方向 / Direction:</label>
-    <span id="direction">--</span>
-</div>
-<div class="result-item">
-    <label>選択点数 / Selected Points:</label>
-    <span id="pointCount">0 / 120</span>
-</div>
-                    <div id="boundaryPointsDetails" class="boundary-details"></div>
-                </div>
-                <div class="result-actions">
-                    <button id="copyResult" class="btn btn-primary">結果をコピー / Copy Results</button>
-<button id="saveImage" class="btn btn-primary">画像として保存 / Save as Image</button>
-                </div>
-            </div>
-        </div>
-
-        <footer>
-            <p>IBTA視覚障害者スポーツクラス分け判定支援ツール</p>
-            <p class="version">バージョン 1.0 | 作成日: 2025年11月10日</p>
+        <footer class="footer">
+            <p><strong>IBTA視覚障害者スポーツクラス分け判定支援ツール</strong></p>
+            <p>バージョン 2.0 | 2025年11月</p>
+            <p>⚠️ このツールは補助的な判定支援ツールです。正式なクラス分け判定は、必ず有資格者によって行われる必要があります。</p>
         </footer>
     </div>
-
-    <script src="ff120-calculator.js"></script>
 </body>
 </html>
