@@ -25,7 +25,7 @@
 - 半盲境界線（0°, 90°, 180°, 270°）の自動除外
 - インタラクティブな測定点入力
 
-### 2. 🌐 周辺視野検査ツール (`index.html`)
+### 2. 🌐 周辺視野検査ツール (`peripheral.html`)
 
 FF120およびエスターマン視野検査の周辺視野測定に対応。
 
@@ -42,6 +42,10 @@ FF120およびエスターマン視野検査の周辺視野測定に対応。
 
 ## 🚀 クイックスタート
 
+### Webで使う（インストール不要）
+
+https://megane0-0.github.io/VIClassificationField/ をブラウザで開くと、ホームページから両ツールを選べます。入力内容はブラウザ内で計算され、外部には送信されません（Turf.js の読み込みにインターネット接続が必要です）。
+
 ### オプション1: ブラウザで直接開く
 
 1. リポジトリをクローン
@@ -53,11 +57,11 @@ cd VIClassificationField
 2. ブラウザでHTMLファイルを開く
 ```bash
 # ランディングページ（両ツールへのリンク）
-open landing.html
+open index.html
 
 # または直接開く
 open central.html    # 中心視野ツール
-open index.html      # 周辺視野ツール
+open peripheral.html # 周辺視野ツール
 ```
 
 ### オプション2: Webサーバーで実行
@@ -71,9 +75,9 @@ npx http-server
 ```
 
 その後、ブラウザで以下を開く:
-- `http://localhost:8000/landing.html` - ホームページ
+- `http://localhost:8000/` - ホームページ
 - `http://localhost:8000/central.html` - 中心視野ツール
-- `http://localhost:8000/index.html` - 周辺視野ツール
+- `http://localhost:8000/peripheral.html` - 周辺視野ツール
 
 ## 📋 共通機能
 
@@ -101,14 +105,14 @@ npx http-server
 
 ```
 VIClassificationField/
-├── landing.html              # ホームページ（両ツールへのリンク）
+├── index.html                # ホームページ（両ツールへのリンク）
 │
 ├── central.html              # 中心視野ツール メインHTML
 ├── central-styles.css        # 中心視野ツール スタイル
 ├── central-data.js           # ハンフリー測定点座標データ
 ├── central-calculator.js     # 中心視野ツール 計算ロジック
 │
-├── index.html                # 周辺視野ツール メインHTML
+├── peripheral.html           # 周辺視野ツール メインHTML
 ├── styles.css                # 周辺視野ツール スタイル
 ├── ff120-coordinates.js      # FF120/Esterman座標データ
 ├── ff120-calculator.js       # 周辺視野ツール 計算ロジック
@@ -236,6 +240,9 @@ MIT License
 
 - **2.1** (2026年10月)
   - 旧リポジトリ VI-Classification-Tool を本リポジトリ（VIClassificationField）に統合
+  - ホームページを `index.html` に変更し、周辺視野ツールを `peripheral.html` に改名
+  - 各ツールにホームへ戻るリンクを追加
+  - GitHub Pages で公開
 
 - **2.0** (2025年11月)
   - 2つの独立したツールに分離（中心視野・周辺視野）

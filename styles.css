@@ -25,6 +25,22 @@ header {
     color: white;
     padding: 30px;
     text-align: center;
+    position: relative;
+}
+
+.home-link {
+    position: absolute;
+    top: 12px;
+    left: 16px;
+    color: white;
+    font-size: 14px;
+    text-decoration: none;
+    opacity: 0.9;
+}
+
+.home-link:hover {
+    text-decoration: underline;
+    opacity: 1;
 }
 
 header h1 {
