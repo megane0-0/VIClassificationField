@@ -45,35 +45,35 @@ FF120およびエスターマン視野検査の周辺視野測定に対応。
 ### オプション1: ブラウザで直接開く
 
 1. リポジトリをクローン
-\`\`\`bash
-git clone <repository-url>
+```bash
+git clone https://github.com/megane0-0/VIClassificationField.git
 cd VIClassificationField
-\`\`\`
+```
 
 2. ブラウザでHTMLファイルを開く
-\`\`\`bash
+```bash
 # ランディングページ（両ツールへのリンク）
 open landing.html
 
 # または直接開く
 open central.html    # 中心視野ツール
 open index.html      # 周辺視野ツール
-\`\`\`
+```
 
 ### オプション2: Webサーバーで実行
 
-\`\`\`bash
+```bash
 # Python 3を使用
 python -m http.server 8000
 
 # または Node.jsのhttp-serverを使用
 npx http-server
-\`\`\`
+```
 
 その後、ブラウザで以下を開く:
-- \`http://localhost:8000/landing.html\` - ホームページ
-- \`http://localhost:8000/central.html\` - 中心視野ツール
-- \`http://localhost:8000/index.html\` - 周辺視野ツール
+- `http://localhost:8000/landing.html` - ホームページ
+- `http://localhost:8000/central.html` - 中心視野ツール
+- `http://localhost:8000/index.html` - 周辺視野ツール
 
 ## 📋 共通機能
 
@@ -99,7 +99,7 @@ npx http-server
 
 ## 📁 ファイル構成
 
-\`\`\`
+```
 VIClassificationField/
 ├── landing.html              # ホームページ（両ツールへのリンク）
 │
@@ -113,8 +113,10 @@ VIClassificationField/
 ├── ff120-coordinates.js      # FF120/Esterman座標データ
 ├── ff120-calculator.js       # 周辺視野ツール 計算ロジック
 │
+├── field_test_stimuli.pdf    # 視野検査の刺激配置資料
+│
 └── README.md                 # このファイル
-\`\`\`
+```
 
 ## 📐 計算アルゴリズム
 
@@ -188,20 +190,20 @@ VIClassificationField/
 ### 中心視野ツールのカスタマイズ
 
 **測定点の追加・変更**
-\`central-data.js\` の \`HUMPHREY_10_2_POINTS\` または \`HUMPHREY_30_2_POINTS\` を編集
+`central-data.js` の `HUMPHREY_10_2_POINTS` または `HUMPHREY_30_2_POINTS` を編集
 
 **計算パラメータの調整**
-\`central-calculator.js\` の \`calculateMaxDiameter()\` 関数内:
+`central-calculator.js` の `calculateMaxDiameter()` 関数内:
 - 角度刻み（デフォルト0.25度）
 - 正方形領域のサイズ
 
 ### 周辺視野ツールのカスタマイズ
 
 **FF120座標データの置き換え**
-\`ff120-coordinates.js\` の \`FF120_RIGHT_EYE_COORDINATES\` 配列を実際のデータで置き換え
+`ff120-coordinates.js` の `FF120_RIGHT_EYE_COORDINATES` 配列を実際のデータで置き換え
 
 **計算パラメータの調整**
-\`ff120-calculator.js\` の関連関数:
+`ff120-calculator.js` の関連関数:
 - 角度刻み（デフォルト0.5度）
 - 最近傍補間の距離閾値
 
@@ -231,6 +233,9 @@ MIT License
 - [ ] Goldmann視野検査の追加
 
 ## 📝 バージョン履歴
+
+- **2.1** (2026年10月)
+  - 旧リポジトリ VI-Classification-Tool を本リポジトリ（VIClassificationField）に統合
 
 - **2.0** (2025年11月)
   - 2つの独立したツールに分離（中心視野・周辺視野）
